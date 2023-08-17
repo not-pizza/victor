@@ -1,10 +1,12 @@
 mod utils;
 
 use wasm_bindgen::prelude::*;
+use web_sys::FileSystemDirectoryHandle;
 
 macro_rules! console_log {
     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
 }
+#[allow(unused_macros)]
 macro_rules! console_warn {
     ($($t:tt)*) => (warn(&format_args!($($t)*).to_string()))
 }
@@ -18,6 +20,7 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-pub fn greet() {
-    console_log!("This is in the console!");
+pub fn greet(handle: FileSystemDirectoryHandle) {
+    utils::set_panic_hook();
+    console_log!("handle: {:?}", handle);
 }

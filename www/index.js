@@ -1,3 +1,7 @@
 import * as victor from "victor";
 
-victor.greet();
+async function example() {
+    const root = await navigator.storage.getDirectory();
+    victor.greet(root);
+}
+example()
