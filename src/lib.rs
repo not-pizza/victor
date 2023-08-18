@@ -1,7 +1,6 @@
 mod utils;
 
 use wasm_bindgen::prelude::*;
-use web_sys::FileSystemDirectoryHandle;
 
 macro_rules! console_log {
     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
@@ -20,7 +19,6 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-pub fn greet(handle: FileSystemDirectoryHandle) {
-    utils::set_panic_hook();
-    console_log!("handle: {:?}", handle);
+pub fn init_db_contents() -> JsValue {
+    return JsValue::from_str("init db contents");
 }

@@ -1,9 +1,0 @@
-[toolchain]
-channel = "nightly-2023-08-16"
-targets = [
-    "wasm32-unknown-unknown",
-    "x86_64-unknown-linux-gnu",
-    "x86_64-apple-darwin",
-    "x86_64-pc-windows-gnu",
-]
-profile = "default"
