@@ -30,7 +30,6 @@
     "victor": "file:../pkg"
   },
   "devDependencies": {
-    "@webpack-cli/serve": "^2.0.5",
     "copy-webpack-plugin": "^5.0.0",
     "hello-wasm-pack": "^0.1.0",
     "prettier": "^3.0.2",

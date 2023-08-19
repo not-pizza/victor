@@ -1,10 +1,7 @@
 mod utils;
 
 use wasm_bindgen::prelude::*;
-use wasm_bindgen_futures::JsFuture;
-use web_sys::{FileSystemFileHandle, FileSystemWritableFileStream};
 
-#[allow(unused_macros)]
 macro_rules! console_log {
     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
 }
@@ -22,14 +19,6 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-pub async fn init_db_contents(file_handle: FileSystemFileHandle) {
-    utils::set_panic_hook();
-
-    let writable = FileSystemWritableFileStream::unchecked_from_js(
-        JsFuture::from(file_handle.create_writable()).await.unwrap(),
-    );
-    JsFuture::from(writable.write_with_str("init db contents").unwrap())
-        .await
-        .unwrap();
-    JsFuture::from(writable.close()).await.unwrap();
+pub fn init_db_contents() -> JsValue {
+    return JsValue::from_str("init db contents");
 }
