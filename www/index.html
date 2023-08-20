@@ -2,10 +2,18 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Hello wasm-pack!</title>
+    <title>Direction & Magnitude</title>
   </head>
   <body>
-    <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
+    <div>
+      <form>
+        <label for="openai">Your OpenAI API Key</label>
+        <input type="text" name="openai">
+        <label for="embedinput">Embed this text:</label>
+        <input type="text" name="embedinput">
+      </form>
+      <button type="button" onclick="onSubmit()">Submit</button>
+    </div>
     <script src="bootstrap.js"></script>
   </body>
 </html>
