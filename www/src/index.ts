@@ -63,7 +63,7 @@ async function storeEmbedding(embedInput: string, openaiApiKey: string) {
   console.log(contents);
 }
 
-async function onSubmit() {
+async function onSubmitStoreEmbedding() {
   const openaiApiKey = (
     document.querySelector('input[name="openai"]') as HTMLInputElement
   ).value;
@@ -75,4 +75,4 @@ async function onSubmit() {
 }
 
 // Expose the function to the global window object so it's accessible from HTML
-(window as any).onSubmit = onSubmit;
+(window as any).onSubmitStoreEmbedding = onSubmitStoreEmbedding;
