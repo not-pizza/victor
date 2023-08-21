@@ -11,6 +11,9 @@ use std::collections::HashMap;
 use uuid::Uuid;
 use wasm_bindgen::prelude::*;
 
+mod filesystem;
+use filesystem::DirectoryHandle;
+
 #[derive(Serialize, Deserialize, Debug)]
 struct Embedding {
     pub id: Uuid,
@@ -37,20 +40,16 @@ extern "C" {
 
 #[wasm_bindgen]
 pub async fn embed(root: FileSystemDirectoryHandle, embedding: &[f64]) {
-    let file_handle: FileSystemFileHandle =
-        JsFuture::from(root.get_file_handle_with_options(
-            "victor.bin",
-            FileSystemGetFileOptions::new().create(true),
-        ))
+    let root = DirectoryHandle::from(root);
+
+    let file_handle = root
+        .get_file_handle_with_options("victor.bin", FileSystemGetFileOptions::new().create(true))
         .await
-        .unwrap()
-        .into();
+        .unwrap();
 
     console_log!("File handle: {:?}", file_handle);
 
-    let writable = FileSystemWritableFileStream::unchecked_from_js(
-        JsFuture::from(file_handle.create_writable()).await.unwrap(),
-    );
+    let writable = file_handle.create_writable().await.unwrap();
 
     console_log!("embedding: {:?}", embedding);
 
@@ -62,8 +61,7 @@ pub async fn embed(root: FileSystemDirectoryHandle, embedding: &[f64]) {
 
     let mut embedding = bincode::serialize(&embedding).expect("Failed to serialize embedding");
 
-    JsFuture::from(writable.write_with_u8_array(&mut embedding).unwrap())
-        .await
-        .unwrap();
-    JsFuture::from(writable.close()).await.unwrap();
+    writable.write_with_u8_array(&mut embedding).await.unwrap();
+
+    writable.close().await.unwrap();
 }
