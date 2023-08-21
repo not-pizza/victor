@@ -14,7 +14,7 @@ use wasm_bindgen::prelude::*;
 #[derive(Serialize, Deserialize, Debug)]
 struct Embedding {
     pub id: Uuid,
-    pub vector: Vec<f32>,
+    pub vector: Vec<f64>,
     pub metadata: Option<HashMap<String, String>>,
 }
 
@@ -56,7 +56,15 @@ pub async fn embed(root: FileSystemDirectoryHandle, embedding: &[f64]) {
 
     console_log!("embedding: {:?}", embedding);
 
-    JsFuture::from(writable.write_with_str("init db contents").unwrap())
+    let embedding = Embedding {
+        id: Uuid::new_v4(),
+        vector: embedding.iter().map(|x| *x).collect(),
+        metadata: None,
+    };
+
+    let mut embedding = bincode::serialize(&embedding).expect("Failed to serialise embedding");
+
+    JsFuture::from(writable.write_with_u8_array(&mut embedding).unwrap())
         .await
         .unwrap();
     JsFuture::from(writable.close()).await.unwrap();
