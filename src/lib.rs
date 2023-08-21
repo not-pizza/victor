@@ -37,8 +37,6 @@ extern "C" {
 
 #[wasm_bindgen]
 pub async fn embed(root: FileSystemDirectoryHandle, embedding: &[f64]) {
-    console_log!("are we get to file handle?");
-
     let file_handle: FileSystemFileHandle =
         JsFuture::from(root.get_file_handle_with_options(
             "victor.bin",
@@ -48,7 +46,7 @@ pub async fn embed(root: FileSystemDirectoryHandle, embedding: &[f64]) {
         .unwrap()
         .into();
 
-    console_log!("{:?}", file_handle);
+    console_log!("File handle: {:?}", file_handle);
 
     let writable = FileSystemWritableFileStream::unchecked_from_js(
         JsFuture::from(file_handle.create_writable()).await.unwrap(),
@@ -62,7 +60,7 @@ pub async fn embed(root: FileSystemDirectoryHandle, embedding: &[f64]) {
         metadata: None,
     };
 
-    let mut embedding = bincode::serialize(&embedding).expect("Failed to serialise embedding");
+    let mut embedding = bincode::serialize(&embedding).expect("Failed to serialize embedding");
 
     JsFuture::from(writable.write_with_u8_array(&mut embedding).unwrap())
         .await
