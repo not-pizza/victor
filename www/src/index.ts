@@ -67,6 +67,9 @@ async function onSubmitStoreEmbedding() {
   const openaiApiKey = (
     document.querySelector('input[name="openai"]') as HTMLInputElement
   ).value;
+  if (openaiApiKey !== "" && openaiApiKey !== undefined) {
+    localStorage.setItem("openaiApiKey", openaiApiKey);
+  }
   const embedInput = (
     document.querySelector('input[name="embedinput"]') as HTMLInputElement
   ).value;
@@ -76,3 +79,16 @@ async function onSubmitStoreEmbedding() {
 
 // Expose the function to the global window object so it's accessible from HTML
 (window as any).onSubmitStoreEmbedding = onSubmitStoreEmbedding;
+
+
+function restoreOpenaiApiKey() {
+  console.log("restoring openai api key");
+  const openaiApiKey = localStorage.getItem("openaiApiKey");
+  if (openaiApiKey !== "" && openaiApiKey !== undefined) {
+    (
+      document.querySelector('input[name="openai"]') as HTMLInputElement
+    ).value = openaiApiKey
+  }
+}
+
+restoreOpenaiApiKey()
