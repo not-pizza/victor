@@ -1,15 +1,12 @@
 use wasm_bindgen::prelude::*;
-use wasm_bindgen_futures::JsFuture;
 use web_sys::{
-    FileSystemDirectoryHandle, FileSystemFileHandle, FileSystemGetFileOptions,
-    FileSystemWritableFileStream,
+    FileSystemCreateWritableOptions, FileSystemDirectoryHandle, FileSystemGetFileOptions,
 };
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use uuid::Uuid;
-use wasm_bindgen::prelude::*;
 
 mod filesystem;
 use filesystem::DirectoryHandle;
@@ -49,9 +46,18 @@ pub async fn embed(root: FileSystemDirectoryHandle, embedding: &[f64]) {
 
     console_log!("File handle: {:?}", file_handle);
 
-    let writable = file_handle.create_writable().await.unwrap();
+    let writable = file_handle
+        .create_writable_with_options(
+            FileSystemCreateWritableOptions::new().keep_existing_data(true),
+        )
+        .await
+        .unwrap();
 
-    console_log!("embedding: {:?}", embedding);
+    let offset = file_handle.get_size().await.unwrap();
+
+    console_log!("offset: {:?}", offset);
+
+    writable.seek_with_f64(offset).await.unwrap();
 
     let embedding = Embedding {
         id: Uuid::new_v4(),
@@ -64,4 +70,15 @@ pub async fn embed(root: FileSystemDirectoryHandle, embedding: &[f64]) {
     writable.write_with_u8_array(&mut embedding).await.unwrap();
 
     writable.close().await.unwrap();
+}
+
+pub async fn find_nearest_neighbors(root: FileSystemDirectoryHandle) -> () {
+    let root = DirectoryHandle::from(root);
+
+    let file_handle = root
+        .get_file_handle_with_options("victor.bin", FileSystemGetFileOptions::new().create(true))
+        .await
+        .unwrap();
+
+    let file = file_handle.get_file().await.unwrap();
 }
