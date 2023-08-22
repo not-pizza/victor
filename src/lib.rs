@@ -3,7 +3,6 @@ mod similarity;
 
 use filesystem::DirectoryHandle;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use uuid::Uuid;
 use wasm_bindgen::prelude::*;
 use web_sys::{
@@ -14,7 +13,6 @@ use web_sys::{
 struct Embedding {
     pub id: Uuid,
     pub vector: Vec<f64>,
-    pub metadata: Option<HashMap<String, String>>,
 }
 
 #[allow(unused_macros)]
@@ -65,7 +63,6 @@ pub async fn write_embedding(root: FileSystemDirectoryHandle, embedding: &[f64])
     let embedding = Embedding {
         id: Uuid::new_v4(),
         vector: embedding.iter().map(|x| *x).collect(),
-        metadata: None,
     };
 
     let mut embedding = bincode::serialize(&embedding).expect("Failed to serialize embedding");
@@ -92,8 +89,9 @@ pub async fn find_nearest_neighbors(root: FileSystemDirectoryHandle, embedding: 
     };
 
     // sanity check
+    let file = file_handle.read().await.unwrap();
     {
-        let file_size = file_handle.get_size().await.unwrap();
+        let file_size = file.len();
         assert_eq!(
             file_size as usize % embedding_size,
             0,

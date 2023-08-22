@@ -1,3 +1,4 @@
+use js_sys::{ArrayBuffer, Uint8Array};
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{
@@ -14,7 +15,7 @@ pub(crate) struct FileHandle(FileSystemFileHandle);
 #[derive(Debug)]
 pub(crate) struct WritableFileStream(FileSystemWritableFileStream);
 #[derive(Debug)]
-pub(crate) struct Blob(web_sys::Blob);
+struct Blob(web_sys::Blob);
 
 impl From<FileSystemDirectoryHandle> for DirectoryHandle {
     fn from(handle: FileSystemDirectoryHandle) -> Self {
@@ -64,7 +65,11 @@ impl FileHandle {
         Ok(WritableFileStream(file_system_writable_file_stream))
     }
 
-    pub(crate) async fn get_file(&self) -> Result<Blob, JsValue> {
+    pub(crate) async fn read(&self) -> Result<Vec<u8>, JsValue> {
+        self.get_file().await?.read().await
+    }
+
+    async fn get_file(&self) -> Result<Blob, JsValue> {
         let file: web_sys::Blob = JsFuture::from(self.0.get_file()).await?.into();
         Ok(Blob(file))
     }
@@ -93,7 +98,15 @@ impl WritableFileStream {
 }
 
 impl Blob {
-    pub(crate) fn size(&self) -> usize {
+    fn size(&self) -> usize {
         self.0.size() as usize
+    }
+
+    async fn read(&self) -> Result<Vec<u8>, JsValue> {
+        let buffer = ArrayBuffer::unchecked_from_js(JsFuture::from(self.0.array_buffer()).await?);
+        let uint8_array = Uint8Array::new(&buffer);
+        let mut vec = vec![0; self.size()];
+        uint8_array.copy_to(&mut vec);
+        Ok(vec)
     }
 }
