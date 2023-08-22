@@ -77,8 +77,10 @@ pub async fn write_embedding(root: FileSystemDirectoryHandle, embedding: &[f64])
 
 /// Assumes all the embeddings are the size of `embedding`
 #[wasm_bindgen]
-pub async fn find_nearest_neighbors(root: FileSystemDirectoryHandle, embedding: &[f64]) -> () {
+pub async fn find_nearest_neighbors(root: FileSystemDirectoryHandle, vector: &[f64]) -> () {
     utils::set_panic_hook();
+
+    let vector = vector.iter().map(|x| *x).collect::<Vec<_>>();
 
     let root = DirectoryHandle::from(root);
 
@@ -89,12 +91,18 @@ pub async fn find_nearest_neighbors(root: FileSystemDirectoryHandle, embedding: 
 
     // Serialize the given embedding to get the size
     let embedding_size = {
-        let embedding = bincode::serialize(&embedding).expect("Failed to serialize embedding");
-        embedding.len()
+        let embedding = Embedding {
+            id: Uuid::new_v4(),
+            vector: vector.clone(),
+        };
+        let embedding_bytes =
+            bincode::serialize(&embedding).expect("Failed to serialize embedding");
+        embedding_bytes.len()
     };
 
-    // sanity check
     let file = file_handle.read().await.unwrap();
+
+    // sanity check
     {
         let file_size = file.len();
         assert_eq!(
@@ -103,6 +111,18 @@ pub async fn find_nearest_neighbors(root: FileSystemDirectoryHandle, embedding: 
             "file_size ({}) was not a multiple of embedding_size ({embedding_size})",
             file_size
         );
+        console_log!("File looks ok");
     }
-    console_log!("File looks ok");
+
+    let embeddings = file
+        .chunks(embedding_size)
+        .into_iter()
+        .map(|chunk| bincode::deserialize::<Embedding>(chunk).unwrap());
+
+    // find max similarity
+    let nearest = embeddings.max_by_key(|potential_match| {
+        (similarity::cosine(potential_match.vector.clone(), vector.clone()).unwrap() * 1000.0)
+            as i32
+    });
+    console_log!("nearest: {:?}", nearest);
 }

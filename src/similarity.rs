@@ -1,4 +1,4 @@
-pub(crate) fn cosine(v1: Vec<f32>, v2: Vec<f32>) -> Result<f32, String> {
+pub(crate) fn cosine(v1: Vec<f64>, v2: Vec<f64>) -> Result<f64, String> {
     // written by copilot
     // wtf
     // seems right from looking at wikipedia
@@ -29,7 +29,7 @@ pub(crate) fn cosine(v1: Vec<f32>, v2: Vec<f32>) -> Result<f32, String> {
 #[test]
 fn cosine_test() {
     let v1 = vec![1.0, 2.0, 3.0];
-    let v2: Vec<f32> = vec![3.0, 2.0, 1.0];
+    let v2 = vec![3.0, 2.0, 1.0];
     let result = cosine(v1, v2).unwrap();
     let expected = 0.7142857;
     assert!(
