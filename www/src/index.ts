@@ -55,6 +55,8 @@ async function storeEmbedding(embedInput: string, openaiApiKey: string) {
 
   const embedding = new Float64Array(embedResponse.data.data[0].embedding);
 
+  await victor.find_nearest_neighbors(root, embedding);
+
   await victor.write_embedding(root, embedding);
 
   const fileHandle = await root.getFileHandle('victor.bin', { create: false });

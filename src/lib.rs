@@ -1,5 +1,6 @@
 mod filesystem;
 mod similarity;
+mod utils;
 
 use filesystem::DirectoryHandle;
 use serde::{Deserialize, Serialize};
@@ -38,6 +39,8 @@ extern "C" {
 /// the sizes are wrong (as otherwise this will corrupt the entire db)
 #[wasm_bindgen]
 pub async fn write_embedding(root: FileSystemDirectoryHandle, embedding: &[f64]) {
+    utils::set_panic_hook();
+
     let root = DirectoryHandle::from(root);
 
     let file_handle = root
@@ -75,6 +78,8 @@ pub async fn write_embedding(root: FileSystemDirectoryHandle, embedding: &[f64])
 /// Assumes all the embeddings are the size of `embedding`
 #[wasm_bindgen]
 pub async fn find_nearest_neighbors(root: FileSystemDirectoryHandle, embedding: &[f64]) -> () {
+    utils::set_panic_hook();
+
     let root = DirectoryHandle::from(root);
 
     let file_handle = root
@@ -99,4 +104,5 @@ pub async fn find_nearest_neighbors(root: FileSystemDirectoryHandle, embedding: 
             file_size
         );
     }
+    console_log!("File looks ok");
 }
