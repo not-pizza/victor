@@ -1,15 +1,14 @@
+mod filesystem;
+mod similarity;
+
+use filesystem::DirectoryHandle;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use uuid::Uuid;
 use wasm_bindgen::prelude::*;
 use web_sys::{
     FileSystemCreateWritableOptions, FileSystemDirectoryHandle, FileSystemGetFileOptions,
 };
-
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-
-use uuid::Uuid;
-
-mod filesystem;
-use filesystem::DirectoryHandle;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Embedding {
