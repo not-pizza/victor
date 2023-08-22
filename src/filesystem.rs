@@ -1,7 +1,7 @@
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{
-    Blob, FileSystemCreateWritableOptions, FileSystemDirectoryHandle, FileSystemFileHandle,
+    self, FileSystemCreateWritableOptions, FileSystemDirectoryHandle, FileSystemFileHandle,
     FileSystemGetFileOptions, FileSystemWritableFileStream,
 };
 
@@ -13,6 +13,8 @@ pub(crate) struct FileHandle(FileSystemFileHandle);
 
 #[derive(Debug)]
 pub(crate) struct WritableFileStream(FileSystemWritableFileStream);
+#[derive(Debug)]
+pub(crate) struct Blob(web_sys::Blob);
 
 impl From<FileSystemDirectoryHandle> for DirectoryHandle {
     fn from(handle: FileSystemDirectoryHandle) -> Self {
@@ -28,6 +30,12 @@ impl From<FileSystemFileHandle> for FileHandle {
 
 impl From<FileSystemWritableFileStream> for WritableFileStream {
     fn from(handle: FileSystemWritableFileStream) -> Self {
+        Self(handle)
+    }
+}
+
+impl From<web_sys::Blob> for Blob {
+    fn from(handle: web_sys::Blob) -> Self {
         Self(handle)
     }
 }
@@ -57,13 +65,13 @@ impl FileHandle {
     }
 
     pub(crate) async fn get_file(&self) -> Result<Blob, JsValue> {
-        let file: Blob = JsFuture::from(self.0.get_file()).await?.into();
-        Ok(file)
+        let file: web_sys::Blob = JsFuture::from(self.0.get_file()).await?.into();
+        Ok(Blob(file))
     }
 
     pub(crate) async fn get_size(&self) -> Result<usize, JsValue> {
-        let file: Blob = JsFuture::from(self.0.get_file()).await?.into();
-        Ok(file.size() as usize)
+        let size = self.get_file().await?.size();
+        Ok(size)
     }
 }
 
@@ -81,5 +89,11 @@ impl WritableFileStream {
     pub(crate) async fn seek(&self, offset: usize) -> Result<(), JsValue> {
         JsFuture::from(self.0.seek_with_u32(offset as u32)?).await?;
         Ok(())
+    }
+}
+
+impl Blob {
+    pub(crate) fn size(&self) -> usize {
+        self.0.size() as usize
     }
 }
