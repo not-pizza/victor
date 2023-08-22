@@ -55,7 +55,10 @@ async function storeEmbedding(embedInput: string, openaiApiKey: string) {
 
   const embedding = new Float64Array(embedResponse.data.data[0].embedding);
 
-  await victor.embed(root, embedding);
+  // Currently broken
+  // await victor.find_nearest_neighbors(root, embedding);
+
+  await victor.write_embedding(root, embedding);
 
   const fileHandle = await root.getFileHandle('victor.bin', { create: false });
   const file = await fileHandle.getFile();
@@ -71,7 +74,7 @@ async function onSubmitStoreEmbedding() {
     localStorage.setItem("openaiApiKey", openaiApiKey);
   }
   const embedInput = (
-    document.querySelector('input[name="embedinput"]') as HTMLInputElement
+    document.querySelector('input[name="embedInput"]') as HTMLInputElement
   ).value;
 
   await storeEmbedding(embedInput, openaiApiKey);
@@ -92,3 +95,17 @@ function restoreOpenaiApiKey() {
 }
 
 restoreOpenaiApiKey()
+
+async function clearDb() {
+  console.log("clearing db");
+  const root = await navigator.storage.getDirectory();
+  if (root) {
+    try {
+      await root.removeEntry("victor.bin");
+    } catch (e) {
+      console.log("could not clear:", e);
+    }
+  }
+}
+
+(window as any).clearDb = clearDb;

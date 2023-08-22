@@ -1,9 +1,9 @@
 mod filesystem;
 mod similarity;
+mod utils;
 
 use filesystem::DirectoryHandle;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use uuid::Uuid;
 use wasm_bindgen::prelude::*;
 use web_sys::{
@@ -14,13 +14,13 @@ use web_sys::{
 struct Embedding {
     pub id: Uuid,
     pub vector: Vec<f64>,
-    pub metadata: Option<HashMap<String, String>>,
 }
 
 #[allow(unused_macros)]
 macro_rules! console_log {
     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
 }
+
 #[allow(unused_macros)]
 macro_rules! console_warn {
     ($($t:tt)*) => (warn(&format_args!($($t)*).to_string()))
@@ -34,8 +34,13 @@ extern "C" {
     fn warn(s: &str);
 }
 
+/// Assumes all the embeddings are the size of `embedding`
+/// TODO: Record the embedding size somewhere so we can return an error if
+/// the sizes are wrong (as otherwise this will corrupt the entire db)
 #[wasm_bindgen]
-pub async fn embed(root: FileSystemDirectoryHandle, embedding: &[f64]) {
+pub async fn write_embedding(root: FileSystemDirectoryHandle, embedding: &[f64]) {
+    utils::set_panic_hook();
+
     let root = DirectoryHandle::from(root);
 
     let file_handle = root
@@ -56,12 +61,11 @@ pub async fn embed(root: FileSystemDirectoryHandle, embedding: &[f64]) {
 
     console_log!("offset: {:?}", offset);
 
-    writable.seek_with_f64(offset).await.unwrap();
+    writable.seek(offset).await.unwrap();
 
     let embedding = Embedding {
         id: Uuid::new_v4(),
         vector: embedding.iter().map(|x| *x).collect(),
-        metadata: None,
     };
 
     let mut embedding = bincode::serialize(&embedding).expect("Failed to serialize embedding");
@@ -71,7 +75,11 @@ pub async fn embed(root: FileSystemDirectoryHandle, embedding: &[f64]) {
     writable.close().await.unwrap();
 }
 
-pub async fn find_nearest_neighbors(root: FileSystemDirectoryHandle) -> () {
+/// Assumes all the embeddings are the size of `embedding`
+#[wasm_bindgen]
+pub async fn find_nearest_neighbors(root: FileSystemDirectoryHandle, embedding: &[f64]) -> () {
+    utils::set_panic_hook();
+
     let root = DirectoryHandle::from(root);
 
     let file_handle = root
@@ -79,5 +87,22 @@ pub async fn find_nearest_neighbors(root: FileSystemDirectoryHandle) -> () {
         .await
         .unwrap();
 
-    let file = file_handle.get_file().await.unwrap();
+    // Serialize the given embedding to get the size
+    let embedding_size = {
+        let embedding = bincode::serialize(&embedding).expect("Failed to serialize embedding");
+        embedding.len()
+    };
+
+    // sanity check
+    let file = file_handle.read().await.unwrap();
+    {
+        let file_size = file.len();
+        assert_eq!(
+            file_size as usize % embedding_size,
+            0,
+            "file_size ({}) was not a multiple of embedding_size ({embedding_size})",
+            file_size
+        );
+    }
+    console_log!("File looks ok");
 }
