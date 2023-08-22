@@ -92,3 +92,17 @@ function restoreOpenaiApiKey() {
 }
 
 restoreOpenaiApiKey()
+
+async function clearDb() {
+  console.log("clearing db");
+  const root = await navigator.storage.getDirectory();
+  if (root) {
+    try {
+      await root.removeEntry("victor.bin");
+    } catch (e) {
+      console.log("could not clear:", e);
+    }
+  }
+}
+
+(window as any).clearDb = clearDb;
