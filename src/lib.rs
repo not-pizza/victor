@@ -21,6 +21,7 @@ struct Embedding {
 macro_rules! console_log {
     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
 }
+
 #[allow(unused_macros)]
 macro_rules! console_warn {
     ($($t:tt)*) => (warn(&format_args!($($t)*).to_string()))
@@ -35,7 +36,7 @@ extern "C" {
 }
 
 #[wasm_bindgen]
-pub async fn embed(root: FileSystemDirectoryHandle, embedding: &[f64]) {
+pub async fn write_embedding(root: FileSystemDirectoryHandle, embedding: &[f64]) {
     let root = DirectoryHandle::from(root);
 
     let file_handle = root
@@ -56,7 +57,7 @@ pub async fn embed(root: FileSystemDirectoryHandle, embedding: &[f64]) {
 
     console_log!("offset: {:?}", offset);
 
-    writable.seek_with_f64(offset).await.unwrap();
+    writable.seek(offset).await.unwrap();
 
     let embedding = Embedding {
         id: Uuid::new_v4(),
