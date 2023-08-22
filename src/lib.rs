@@ -35,6 +35,9 @@ extern "C" {
     fn warn(s: &str);
 }
 
+/// Assumes all the embeddings are the size of `embedding`
+/// TODO: Record the embedding size somewhere so we can return an error if
+/// the sizes are wrong (as otherwise this will corrupt the entire db)
 #[wasm_bindgen]
 pub async fn write_embedding(root: FileSystemDirectoryHandle, embedding: &[f64]) {
     let root = DirectoryHandle::from(root);
@@ -72,7 +75,9 @@ pub async fn write_embedding(root: FileSystemDirectoryHandle, embedding: &[f64])
     writable.close().await.unwrap();
 }
 
-pub async fn find_nearest_neighbors(root: FileSystemDirectoryHandle) -> () {
+/// Assumes all the embeddings are the size of `embedding`
+#[wasm_bindgen]
+pub async fn find_nearest_neighbors(root: FileSystemDirectoryHandle, embedding: &[f64]) -> () {
     let root = DirectoryHandle::from(root);
 
     let file_handle = root
@@ -80,5 +85,20 @@ pub async fn find_nearest_neighbors(root: FileSystemDirectoryHandle) -> () {
         .await
         .unwrap();
 
-    let file = file_handle.get_file().await.unwrap();
+    // Serialize the given embedding to get the size
+    let embedding_size = {
+        let embedding = bincode::serialize(&embedding).expect("Failed to serialize embedding");
+        embedding.len()
+    };
+
+    // sanity check
+    {
+        let file_size = file_handle.get_size().await.unwrap();
+        assert_eq!(
+            file_size as usize % embedding_size,
+            0,
+            "file_size ({}) was not a multiple of embedding_size ({embedding_size})",
+            file_size
+        );
+    }
 }
