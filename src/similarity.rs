@@ -1,5 +1,5 @@
-fn cosine(v1: Vec<f32>, v2: Vec<f32>) -> Result<f32, String> {
-    // written by copilot 
+pub(crate) fn cosine(v1: Vec<f32>, v2: Vec<f32>) -> Result<f32, String> {
+    // written by copilot
     // wtf
     // seems right from looking at wikipedia
     if v1.len() != v2.len() {
