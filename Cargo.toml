@@ -13,7 +13,9 @@ web-sys = { version = "0.3.64", features = [
     "FileSystemDirectoryHandle",
     "FileSystemFileHandle",
     "FileSystemWritableFileStream",
-    "FileSystemGetFileOptions"
+    "FileSystemGetFileOptions",
+    "FileSystemCreateWritableOptions",
+    "Blob",
 ] }
 bincode = { version = "1.3.3" }
 serde = { version = "1.0.183", features = [ "derive" ]}
