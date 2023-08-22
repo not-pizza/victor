@@ -1,4 +1,6 @@
 import * as victor from 'victor';
+import flatland from './flatland.json';
+
 import { EmbeddingResponse } from '../types/openai';
 
 type Success<T> = {
@@ -57,20 +59,15 @@ async function storeEmbedding(embedInput: string, openaiApiKey: string) {
 
   await victor.find_nearest_neighbors(root, embedding);
 
-  await victor.write_embedding(root, embedding);
-
-  const fileHandle = await root.getFileHandle('victor.bin', { create: false });
-  const file = await fileHandle.getFile();
-  const contents = await file.text();
-  console.log(contents);
+  await victor.write_embedding(root, embedding, embedInput);
 }
 
 async function onSubmitStoreEmbedding() {
   const openaiApiKey = (
     document.querySelector('input[name="openai"]') as HTMLInputElement
   ).value;
-  if (openaiApiKey !== "" && openaiApiKey !== undefined) {
-    localStorage.setItem("openaiApiKey", openaiApiKey);
+  if (openaiApiKey !== '' && openaiApiKey !== undefined) {
+    localStorage.setItem('openaiApiKey', openaiApiKey);
   }
   const embedInput = (
     document.querySelector('input[name="embedInput"]') as HTMLInputElement
@@ -79,32 +76,36 @@ async function onSubmitStoreEmbedding() {
   await storeEmbedding(embedInput, openaiApiKey);
 }
 
-// Expose the function to the global window object so it's accessible from HTML
-(window as any).onSubmitStoreEmbedding = onSubmitStoreEmbedding;
-
+async function embedFlatlands() {
+  flatland.paragraphs.forEach(async (paragraph: string) => {
+    await storeEmbedding(paragraph, localStorage.getItem('openaiApiKey'));
+  });
+}
 
 function restoreOpenaiApiKey() {
-  console.log("restoring openai api key");
-  const openaiApiKey = localStorage.getItem("openaiApiKey");
-  if (openaiApiKey !== "" && openaiApiKey !== undefined) {
-    (
-      document.querySelector('input[name="openai"]') as HTMLInputElement
-    ).value = openaiApiKey
+  console.log('restoring openai api key');
+  const openaiApiKey = localStorage.getItem('openaiApiKey');
+  if (openaiApiKey !== '' && openaiApiKey !== undefined) {
+    (document.querySelector('input[name="openai"]') as HTMLInputElement).value =
+      openaiApiKey;
   }
 }
 
-restoreOpenaiApiKey()
+restoreOpenaiApiKey();
 
 async function clearDb() {
-  console.log("clearing db");
+  console.log('clearing db');
   const root = await navigator.storage.getDirectory();
   if (root) {
     try {
-      await root.removeEntry("victor.bin");
+      await root.removeEntry('victor.bin');
     } catch (e) {
-      console.log("could not clear:", e);
+      console.log('could not clear:', e);
     }
   }
 }
 
+// Expose the functions to the global window object so they're accessible from HTML
+(window as any).onSubmitStoreEmbedding = onSubmitStoreEmbedding;
 (window as any).clearDb = clearDb;
+(window as any).embedFlatlands = embedFlatlands;

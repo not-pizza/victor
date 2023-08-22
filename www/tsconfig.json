@@ -7,7 +7,9 @@
     "jsx": "react",
     "allowJs": true,
     "module": "ESNext",
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "resolveJsonModule": true
   },  
   "include": [
     "src/**/*.ts",

@@ -15,7 +15,7 @@ pub(crate) struct FileHandle(FileSystemFileHandle);
 #[derive(Debug)]
 pub(crate) struct WritableFileStream(FileSystemWritableFileStream);
 #[derive(Debug)]
-struct Blob(web_sys::Blob);
+pub(crate) struct Blob(web_sys::Blob);
 
 impl From<FileSystemDirectoryHandle> for DirectoryHandle {
     fn from(handle: FileSystemDirectoryHandle) -> Self {
@@ -69,7 +69,7 @@ impl FileHandle {
         self.get_file().await?.read().await
     }
 
-    async fn get_file(&self) -> Result<Blob, JsValue> {
+    pub(crate) async fn get_file(&self) -> Result<Blob, JsValue> {
         let file: web_sys::Blob = JsFuture::from(self.0.get_file()).await?.into();
         Ok(Blob(file))
     }
@@ -108,5 +108,12 @@ impl Blob {
         let mut vec = vec![0; self.size()];
         uint8_array.copy_to(&mut vec);
         Ok(vec)
+    }
+
+    pub(crate) async fn text(&self) -> Result<String, JsValue> {
+        JsFuture::from(self.0.text())
+            .await?
+            .as_string()
+            .ok_or(JsValue::NULL)
     }
 }
