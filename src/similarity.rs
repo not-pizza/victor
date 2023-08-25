@@ -1,4 +1,4 @@
-pub(crate) fn cosine(v1: Vec<f64>, v2: Vec<f64>) -> Result<f64, String> {
+pub(crate) fn cosine(v1: Vec<f32>, v2: Vec<f32>) -> Result<f32, String> {
     // written by copilot
     // wtf
     // seems right from looking at wikipedia

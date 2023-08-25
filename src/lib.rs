@@ -2,19 +2,18 @@ mod filesystem;
 mod similarity;
 mod utils;
 
-use filesystem::{Blob, DirectoryHandle};
+use filesystem::DirectoryHandle;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
 use wasm_bindgen::prelude::*;
-use wasm_bindgen_futures::JsFuture;
 use web_sys::{
     FileSystemCreateWritableOptions, FileSystemDirectoryHandle, FileSystemGetFileOptions,
 };
 #[derive(Serialize, Deserialize, Debug)]
 struct Embedding {
     pub id: Uuid,
-    pub vector: Vec<f64>,
+    pub vector: Vec<f32>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -62,21 +61,13 @@ async fn write_to_victor(root: FileSystemDirectoryHandle, embedding: &[f64], id:
 
     let embedding = Embedding {
         id: id,
-        vector: embedding.iter().map(|x| *x).collect(),
+        vector: embedding.iter().map(|x| *x as f32).collect(),
     };
 
     let mut embedding = bincode::serialize(&embedding).expect("Failed to serialize embedding");
 
     victor_writable
         .write_with_u8_array(&mut embedding)
-        .await
-        .unwrap();
-
-    let existing_content = root
-        .get_file_handle_with_options("content.bin", FileSystemGetFileOptions::new().create(true))
-        .await
-        .unwrap()
-        .get_file()
         .await
         .unwrap();
 
@@ -152,7 +143,7 @@ pub async fn write_embedding(root: FileSystemDirectoryHandle, embedding: &[f64],
 pub async fn find_nearest_neighbors(root: FileSystemDirectoryHandle, vector: &[f64]) -> () {
     utils::set_panic_hook();
 
-    let vector = vector.iter().map(|x| *x).collect::<Vec<_>>();
+    let vector = vector.iter().map(|x| *x as f32).collect::<Vec<_>>();
 
     let root = DirectoryHandle::from(root);
 
