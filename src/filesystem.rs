@@ -110,6 +110,7 @@ impl Blob {
         Ok(vec)
     }
 
+    #[allow(dead_code)]
     pub(crate) async fn text(&self) -> Result<String, JsValue> {
         JsFuture::from(self.0.text())
             .await?
