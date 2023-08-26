@@ -1,15 +1,17 @@
 mod filesystem;
 mod similarity;
 mod utils;
+mod web_filesystem;
 
-use filesystem::DirectoryHandle;
+use filesystem::{
+    CreateWritableOptions, DirectoryHandle, FileHandle, GetFileHandleOptions, WritableFileStream,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
 use wasm_bindgen::prelude::*;
-use web_sys::{
-    FileSystemCreateWritableOptions, FileSystemDirectoryHandle, FileSystemGetFileOptions,
-};
+use web_sys::FileSystemDirectoryHandle;
+
 #[derive(Serialize, Deserialize, Debug)]
 struct Embedding {
     pub id: Uuid,
@@ -41,17 +43,17 @@ extern "C" {
 }
 
 async fn write_to_victor(root: FileSystemDirectoryHandle, embedding: &[f64], id: Uuid) {
-    let root = DirectoryHandle::from(root);
+    let root = web_filesystem::DirectoryHandle::from(root);
 
     let victor_file_handle = root
-        .get_file_handle_with_options("victor.bin", FileSystemGetFileOptions::new().create(true))
+        .get_file_handle_with_options("victor.bin", &GetFileHandleOptions { create: true })
         .await
         .unwrap();
 
     let victor_writable = victor_file_handle
-        .create_writable_with_options(
-            FileSystemCreateWritableOptions::new().keep_existing_data(true),
-        )
+        .create_writable_with_options(&CreateWritableOptions {
+            keep_existing_data: true,
+        })
         .await
         .unwrap();
 
@@ -75,10 +77,10 @@ async fn write_to_victor(root: FileSystemDirectoryHandle, embedding: &[f64], id:
 }
 
 async fn write_to_content(root: FileSystemDirectoryHandle, content: &str, id: Uuid) {
-    let root = DirectoryHandle::from(root);
+    let root = web_filesystem::DirectoryHandle::from(root);
 
     let content_file_handle = root
-        .get_file_handle_with_options("content.bin", FileSystemGetFileOptions::new().create(true))
+        .get_file_handle_with_options("content.bin", &GetFileHandleOptions { create: true })
         .await
         .unwrap();
 
@@ -95,9 +97,9 @@ async fn write_to_content(root: FileSystemDirectoryHandle, content: &str, id: Uu
     let mut updated_data = bincode::serialize(&hashmap).expect("Failed to serialize hashmap");
 
     let content_writable = content_file_handle
-        .create_writable_with_options(
-            FileSystemCreateWritableOptions::new().keep_existing_data(true),
-        )
+        .create_writable_with_options(&CreateWritableOptions {
+            keep_existing_data: true,
+        })
         .await
         .unwrap();
 
@@ -109,9 +111,9 @@ async fn write_to_content(root: FileSystemDirectoryHandle, content: &str, id: Uu
     content_writable.close().await.unwrap();
 }
 
-async fn get_content(root: DirectoryHandle, id: Uuid) -> String {
+async fn get_content(root: impl DirectoryHandle, id: Uuid) -> String {
     let content_file_handle = root
-        .get_file_handle_with_options("content.bin", FileSystemGetFileOptions::new().create(true))
+        .get_file_handle_with_options("content.bin", &GetFileHandleOptions { create: true })
         .await
         .unwrap();
 
@@ -145,10 +147,10 @@ pub async fn find_nearest_neighbors(root: FileSystemDirectoryHandle, vector: &[f
 
     let vector = vector.iter().map(|x| *x as f32).collect::<Vec<_>>();
 
-    let root = DirectoryHandle::from(root);
+    let root = web_filesystem::DirectoryHandle::from(root);
 
     let file_handle = root
-        .get_file_handle_with_options("victor.bin", FileSystemGetFileOptions::new().create(true))
+        .get_file_handle_with_options("victor.bin", &GetFileHandleOptions { create: true })
         .await
         .unwrap();
 
