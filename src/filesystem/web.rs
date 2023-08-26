@@ -50,7 +50,7 @@ impl filesystem::DirectoryHandle for DirectoryHandle {
     type FileHandleT = FileHandle;
 
     async fn get_file_handle_with_options(
-        &self,
+        &mut self,
         name: &str,
         options: &filesystem::GetFileHandleOptions,
     ) -> Result<Self::FileHandleT, Self::Error> {
@@ -71,7 +71,7 @@ impl filesystem::FileHandle for FileHandle {
     type WritableFileStreamT = WritableFileStream;
 
     async fn create_writable_with_options(
-        &self,
+        &mut self,
         options: &filesystem::CreateWritableOptions,
     ) -> Result<Self::WritableFileStreamT, Self::Error> {
         let file_system_writable_file_stream = FileSystemWritableFileStream::unchecked_from_js(
@@ -107,17 +107,17 @@ impl FileHandle {
 impl filesystem::WritableFileStream for WritableFileStream {
     type Error = JsValue;
 
-    async fn write_with_u8_array(&self, data: &mut [u8]) -> Result<(), Self::Error> {
+    async fn write_with_u8_array(&mut self, data: &mut [u8]) -> Result<(), Self::Error> {
         JsFuture::from(self.0.write_with_u8_array(data)?).await?;
         Ok(())
     }
 
-    async fn close(&self) -> Result<(), Self::Error> {
+    async fn close(&mut self) -> Result<(), Self::Error> {
         JsFuture::from(self.0.close()).await?;
         Ok(())
     }
 
-    async fn seek(&self, offset: usize) -> Result<(), Self::Error> {
+    async fn seek(&mut self, offset: usize) -> Result<(), Self::Error> {
         JsFuture::from(self.0.seek_with_u32(offset as u32)?).await?;
         Ok(())
     }
