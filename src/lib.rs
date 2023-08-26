@@ -62,7 +62,7 @@ async fn write_to_victor(root: FileSystemDirectoryHandle, embedding: &[f64], id:
     victor_writable.seek(victor_offset).await.unwrap();
 
     let embedding = Embedding {
-        id: id,
+        id,
         vector: embedding.iter().map(|x| *x as f32).collect(),
     };
 
@@ -124,7 +124,7 @@ async fn get_content(mut root: impl DirectoryHandle, id: Uuid) -> String {
 
     let content = hashmap.get(&id).unwrap();
 
-    return content.to_string();
+    content.to_string()
 }
 
 /// Assumes all the embeddings are the size of `embedding`
@@ -142,7 +142,7 @@ pub async fn write_embedding(root: FileSystemDirectoryHandle, embedding: &[f64],
 
 /// Assumes all the embeddings are the size of `embedding`
 #[wasm_bindgen]
-pub async fn find_nearest_neighbors(root: FileSystemDirectoryHandle, vector: &[f64]) -> () {
+pub async fn find_nearest_neighbors(root: FileSystemDirectoryHandle, vector: &[f64]) {
     utils::set_panic_hook();
 
     let vector = vector.iter().map(|x| *x as f32).collect::<Vec<_>>();
@@ -181,7 +181,6 @@ pub async fn find_nearest_neighbors(root: FileSystemDirectoryHandle, vector: &[f
 
     let embeddings = file
         .chunks(embedding_size)
-        .into_iter()
         .map(|chunk| bincode::deserialize::<Embedding>(chunk).unwrap());
 
     // find max similarity

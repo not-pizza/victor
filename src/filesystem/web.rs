@@ -77,7 +77,7 @@ impl filesystem::FileHandle for FileHandle {
         let file_system_writable_file_stream = FileSystemWritableFileStream::unchecked_from_js(
             JsFuture::from(
                 self.0.create_writable_with_options(
-                    &FileSystemCreateWritableOptions::new()
+                    FileSystemCreateWritableOptions::new()
                         .keep_existing_data(options.keep_existing_data),
                 ),
             )
