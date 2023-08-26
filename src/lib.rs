@@ -1,10 +1,10 @@
 mod filesystem;
 mod similarity;
 mod utils;
-mod web_filesystem;
 
 use filesystem::{
-    CreateWritableOptions, DirectoryHandle, FileHandle, GetFileHandleOptions, WritableFileStream,
+    web, CreateWritableOptions, DirectoryHandle, FileHandle, GetFileHandleOptions,
+    WritableFileStream,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -43,7 +43,7 @@ extern "C" {
 }
 
 async fn write_to_victor(root: FileSystemDirectoryHandle, embedding: &[f64], id: Uuid) {
-    let root = web_filesystem::DirectoryHandle::from(root);
+    let root = web::DirectoryHandle::from(root);
 
     let victor_file_handle = root
         .get_file_handle_with_options("victor.bin", &GetFileHandleOptions { create: true })
@@ -77,7 +77,7 @@ async fn write_to_victor(root: FileSystemDirectoryHandle, embedding: &[f64], id:
 }
 
 async fn write_to_content(root: FileSystemDirectoryHandle, content: &str, id: Uuid) {
-    let root = web_filesystem::DirectoryHandle::from(root);
+    let root = web::DirectoryHandle::from(root);
 
     let content_file_handle = root
         .get_file_handle_with_options("content.bin", &GetFileHandleOptions { create: true })
@@ -147,7 +147,7 @@ pub async fn find_nearest_neighbors(root: FileSystemDirectoryHandle, vector: &[f
 
     let vector = vector.iter().map(|x| *x as f32).collect::<Vec<_>>();
 
-    let root = web_filesystem::DirectoryHandle::from(root);
+    let root = web::DirectoryHandle::from(root);
 
     let file_handle = root
         .get_file_handle_with_options("victor.bin", &GetFileHandleOptions { create: true })
