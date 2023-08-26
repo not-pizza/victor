@@ -43,14 +43,14 @@ extern "C" {
 }
 
 async fn write_to_victor(root: FileSystemDirectoryHandle, embedding: &[f64], id: Uuid) {
-    let root = web::DirectoryHandle::from(root);
+    let mut root = web::DirectoryHandle::from(root);
 
-    let victor_file_handle = root
+    let mut victor_file_handle = root
         .get_file_handle_with_options("victor.bin", &GetFileHandleOptions { create: true })
         .await
         .unwrap();
 
-    let victor_writable = victor_file_handle
+    let mut victor_writable = victor_file_handle
         .create_writable_with_options(&CreateWritableOptions {
             keep_existing_data: true,
         })
@@ -77,9 +77,9 @@ async fn write_to_victor(root: FileSystemDirectoryHandle, embedding: &[f64], id:
 }
 
 async fn write_to_content(root: FileSystemDirectoryHandle, content: &str, id: Uuid) {
-    let root = web::DirectoryHandle::from(root);
+    let mut root = web::DirectoryHandle::from(root);
 
-    let content_file_handle = root
+    let mut content_file_handle = root
         .get_file_handle_with_options("content.bin", &GetFileHandleOptions { create: true })
         .await
         .unwrap();
@@ -96,7 +96,7 @@ async fn write_to_content(root: FileSystemDirectoryHandle, content: &str, id: Uu
 
     let mut updated_data = bincode::serialize(&hashmap).expect("Failed to serialize hashmap");
 
-    let content_writable = content_file_handle
+    let mut content_writable = content_file_handle
         .create_writable_with_options(&CreateWritableOptions {
             keep_existing_data: true,
         })
@@ -111,7 +111,7 @@ async fn write_to_content(root: FileSystemDirectoryHandle, content: &str, id: Uu
     content_writable.close().await.unwrap();
 }
 
-async fn get_content(root: impl DirectoryHandle, id: Uuid) -> String {
+async fn get_content(mut root: impl DirectoryHandle, id: Uuid) -> String {
     let content_file_handle = root
         .get_file_handle_with_options("content.bin", &GetFileHandleOptions { create: true })
         .await
@@ -147,7 +147,7 @@ pub async fn find_nearest_neighbors(root: FileSystemDirectoryHandle, vector: &[f
 
     let vector = vector.iter().map(|x| *x as f32).collect::<Vec<_>>();
 
-    let root = web::DirectoryHandle::from(root);
+    let mut root = web::DirectoryHandle::from(root);
 
     let file_handle = root
         .get_file_handle_with_options("victor.bin", &GetFileHandleOptions { create: true })

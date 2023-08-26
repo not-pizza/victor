@@ -18,7 +18,7 @@ pub trait DirectoryHandle {
     type FileHandleT: FileHandle<Error = Self::Error>;
 
     async fn get_file_handle_with_options(
-        &self,
+        &mut self,
         name: &str,
         options: &GetFileHandleOptions,
     ) -> Result<Self::FileHandleT, Self::Error>;
@@ -30,7 +30,7 @@ pub trait FileHandle {
     type WritableFileStreamT: WritableFileStream<Error = Self::Error>;
 
     async fn create_writable_with_options(
-        &self,
+        &mut self,
         options: &CreateWritableOptions,
     ) -> Result<Self::WritableFileStreamT, Self::Error>;
 
@@ -43,9 +43,9 @@ pub trait FileHandle {
 pub trait WritableFileStream {
     type Error: Debug;
 
-    async fn write_with_u8_array(&self, data: &mut [u8]) -> Result<(), Self::Error>;
+    async fn write_with_u8_array(&mut self, data: &mut [u8]) -> Result<(), Self::Error>;
 
-    async fn close(&self) -> Result<(), Self::Error>;
+    async fn close(&mut self) -> Result<(), Self::Error>;
 
-    async fn seek(&self, offset: usize) -> Result<(), Self::Error>;
+    async fn seek(&mut self, offset: usize) -> Result<(), Self::Error>;
 }
