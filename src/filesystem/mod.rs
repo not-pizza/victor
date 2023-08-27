@@ -1,3 +1,4 @@
+mod memory;
 pub mod web;
 
 use std::fmt::Debug;
@@ -43,7 +44,7 @@ pub trait FileHandle {
 pub trait WritableFileStream {
     type Error: Debug;
 
-    async fn write_with_u8_array(&mut self, data: &mut [u8]) -> Result<(), Self::Error>;
+    async fn write_at_cursor_pos(&mut self, data: Vec<u8>) -> Result<(), Self::Error>;
 
     async fn close(&mut self) -> Result<(), Self::Error>;
 

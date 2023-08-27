@@ -57,7 +57,8 @@ async function storeEmbedding(embedInput: string, openaiApiKey: string) {
 
   const embedding = new Float64Array(embedResponse.data.data[0].embedding);
 
-  await victor.find_nearest_neighbors(root, embedding);
+  let current_nearest = await victor.find_nearest_neighbor(root, embedding);
+  console.log('nearest:', current_nearest);
 
   await victor.write_embedding(root, embedding, embedInput);
 }
