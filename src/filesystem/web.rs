@@ -107,8 +107,8 @@ impl FileHandle {
 impl filesystem::WritableFileStream for WritableFileStream {
     type Error = JsValue;
 
-    async fn write_with_u8_array(&mut self, data: &mut [u8]) -> Result<(), Self::Error> {
-        JsFuture::from(self.0.write_with_u8_array(data)?).await?;
+    async fn write_at_cursor_pos(&mut self, mut data: Vec<u8>) -> Result<(), Self::Error> {
+        JsFuture::from(self.0.write_with_u8_array(data.as_mut_slice())?).await?;
         Ok(())
     }
 

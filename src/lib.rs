@@ -66,10 +66,10 @@ async fn write_to_victor(root: FileSystemDirectoryHandle, embedding: &[f64], id:
         vector: embedding.iter().map(|x| *x as f32).collect(),
     };
 
-    let mut embedding = bincode::serialize(&embedding).expect("Failed to serialize embedding");
+    let embedding = bincode::serialize(&embedding).expect("Failed to serialize embedding");
 
     victor_writable
-        .write_with_u8_array(&mut embedding)
+        .write_at_cursor_pos(embedding)
         .await
         .unwrap();
 
@@ -94,7 +94,7 @@ async fn write_to_content(root: FileSystemDirectoryHandle, content: &str, id: Uu
 
     hashmap.insert(id, content.to_string());
 
-    let mut updated_data = bincode::serialize(&hashmap).expect("Failed to serialize hashmap");
+    let updated_data = bincode::serialize(&hashmap).expect("Failed to serialize hashmap");
 
     let mut content_writable = content_file_handle
         .create_writable_with_options(&CreateWritableOptions {
@@ -104,7 +104,7 @@ async fn write_to_content(root: FileSystemDirectoryHandle, content: &str, id: Uu
         .unwrap();
 
     content_writable
-        .write_with_u8_array(&mut updated_data)
+        .write_at_cursor_pos(updated_data)
         .await
         .unwrap();
 
