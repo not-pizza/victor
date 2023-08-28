@@ -56,6 +56,13 @@ impl filesystem::DirectoryHandle for DirectoryHandle {
     }
 }
 
+impl DirectoryHandle {
+    #[allow(dead_code)]
+    pub(crate) fn new() -> Self {
+        Self(Rc::new(RefCell::new(HashMap::new())))
+    }
+}
+
 #[async_trait(?Send)]
 impl filesystem::FileHandle for FileHandle {
     type Error = String;

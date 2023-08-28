@@ -23,17 +23,17 @@ pub struct Content {
     pub content: String,
 }
 
-pub(crate) async fn write(mut root: impl DirectoryHandle, embedding: Vec<f32>, content: &str) {
+pub(crate) async fn write(root: &mut impl DirectoryHandle, embedding: Vec<f32>, content: &str) {
     let id = Uuid::new_v4();
 
     let embedding = Embedding { id, embedding };
 
-    write_embedding(&mut root, embedding).await;
-    write_content(&mut root, content, id).await;
+    write_embedding(root, embedding).await;
+    write_content(root, content, id).await;
 }
 
 pub(crate) async fn find_nearest_neighbor(
-    mut root: impl DirectoryHandle,
+    root: &mut impl DirectoryHandle,
     vector: Vec<f32>,
 ) -> Option<Content> {
     let file_handle = root
@@ -149,7 +149,7 @@ async fn write_content(root: &mut impl DirectoryHandle, content: &str, id: Uuid)
     content_writable.close().await.unwrap();
 }
 
-async fn get_content(mut root: impl DirectoryHandle, id: Uuid) -> String {
+async fn get_content(root: &mut impl DirectoryHandle, id: Uuid) -> String {
     let content_file_handle = root
         .get_file_handle_with_options("content.bin", &GetFileHandleOptions { create: true })
         .await
