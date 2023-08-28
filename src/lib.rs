@@ -1,11 +1,12 @@
 mod filesystem;
 mod similarity;
 mod utils;
-mod victor;
+mod db;
 
 #[cfg(test)]
 mod tests;
 
+use db::Victor;
 use wasm_bindgen::prelude::*;
 use web_sys::FileSystemDirectoryHandle;
 
@@ -34,11 +35,11 @@ extern "C" {
 pub async fn write_embedding(root: FileSystemDirectoryHandle, embedding: &[f64], content: &str) {
     utils::set_panic_hook();
 
-    let mut root = filesystem::web::DirectoryHandle::from(root);
+    let mut victor = Victor::new(filesystem::web::DirectoryHandle::from(root));
 
     let embedding = embedding.iter().map(|x| *x as f32).collect::<Vec<_>>();
 
-    victor::write(&mut root, embedding, content).await;
+    victor.write(embedding, content).await;
 }
 
 /// Assumes all the embeddings are the size of `embedding`
@@ -46,11 +47,11 @@ pub async fn write_embedding(root: FileSystemDirectoryHandle, embedding: &[f64],
 pub async fn find_nearest_neighbor(root: FileSystemDirectoryHandle, embedding: &[f64]) -> JsValue {
     utils::set_panic_hook();
 
-    let mut root = filesystem::web::DirectoryHandle::from(root);
+    let mut victor = Victor::new(filesystem::web::DirectoryHandle::from(root));
 
     let embedding = embedding.iter().map(|x| *x as f32).collect::<Vec<_>>();
 
-    let nearest = victor::find_nearest_neighbor(&mut root, embedding).await;
+    let nearest = victor.find_nearest_neighbor(embedding).await;
 
     if let Some(nearest) = nearest {
         wasm_bindgen::JsValue::from_str(&nearest.content)

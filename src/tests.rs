@@ -1,14 +1,18 @@
-use crate::{filesystem::memory, victor};
+use crate::{filesystem::memory, db::Victor};
 
 #[tokio::test]
 async fn store_and_retrieve() {
-    let vector = vec![1.0, 2.0, 3.0];
+    let embedding = vec![1.0, 2.0, 3.0];
 
-    let mut root = memory::DirectoryHandle::new();
-    victor::write(&mut root, vector.clone(), "hello").await;
-    let result = victor::find_nearest_neighbor(&mut root, vector)
+    let mut victor = Victor::new(memory::DirectoryHandle::new());
+
+    victor.write(embedding.clone(), "hello").await;
+
+    let result = victor
+        .find_nearest_neighbor(embedding)
         .await
         .unwrap()
         .content;
+
     assert_eq!(result, "hello".to_string());
 }
