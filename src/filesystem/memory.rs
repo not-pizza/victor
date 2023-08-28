@@ -102,14 +102,12 @@ impl filesystem::WritableFileStream for WritableFileStream {
     type Error = String;
 
     async fn write_at_cursor_pos(&mut self, data: Vec<u8>) -> Result<(), Self::Error> {
-        if self.cursor_pos != self.stream.borrow().len() {
-            // tbh I don't know what happens if you try to write but your cursor isn't at the end
-            // and we never do that so who cares
-            todo!()
-        }
-        self.stream
-            .borrow_mut()
-            .extend(data.into_iter().collect::<Vec<u8>>());
+        let mut stream = self.stream.borrow_mut();
+        *stream = stream[0..self.cursor_pos]
+            .into_iter()
+            .cloned()
+            .chain(data)
+            .collect::<Vec<u8>>();
         Ok(())
     }
 
@@ -119,6 +117,12 @@ impl filesystem::WritableFileStream for WritableFileStream {
     }
 
     async fn seek(&mut self, offset: usize) -> Result<(), Self::Error> {
+        if offset > self.len() {
+            return Err(format!(
+                "cannot seek to {offset} because the file is only {len} bytes long",
+                len = self.len()
+            ));
+        }
         self.cursor_pos = offset;
         Ok(())
     }
