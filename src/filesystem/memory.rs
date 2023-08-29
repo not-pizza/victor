@@ -72,27 +72,22 @@ impl filesystem::FileHandle for FileHandle {
         &mut self,
         options: &filesystem::CreateWritableOptions,
     ) -> Result<Self::WritableFileStreamT, Self::Error> {
-        if options.keep_existing_data {
-            Ok(WritableFileStream {
-                cursor_pos: 0,
-                ..self.0.clone()
-            })
-        } else {
+        if !options.keep_existing_data {
             self.0.stream.borrow_mut().clear();
-            Ok(WritableFileStream {
-                cursor_pos: 0,
-                ..self.0.clone()
-            })
         }
+        Ok(WritableFileStream {
+            cursor_pos: 0,
+            ..self.0.clone()
+        })
     }
 
     async fn read(&self) -> Result<Vec<u8>, Self::Error> {
-        let stream: Rc<RefCell<Vec<u8>>> = self.0.stream.clone();
+        let stream = self.0.stream.clone();
         let data = stream.borrow().clone();
         Ok(data)
     }
 
-    async fn get_size(&self) -> Result<usize, Self::Error> {
+    async fn size(&self) -> Result<usize, Self::Error> {
         Ok(self.0.len())
     }
 }
@@ -104,7 +99,7 @@ impl filesystem::WritableFileStream for WritableFileStream {
     async fn write_at_cursor_pos(&mut self, data: Vec<u8>) -> Result<(), Self::Error> {
         let mut stream = self.stream.borrow_mut();
         *stream = stream[0..self.cursor_pos]
-            .into_iter()
+            .iter()
             .cloned()
             .chain(data)
             .collect::<Vec<u8>>();

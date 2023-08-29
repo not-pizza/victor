@@ -90,7 +90,7 @@ impl filesystem::FileHandle for FileHandle {
         self.get_file().await?.read().await
     }
 
-    async fn get_size(&self) -> Result<usize, JsValue> {
+    async fn size(&self) -> Result<usize, JsValue> {
         let size = self.get_file().await?.size();
         Ok(size)
     }
