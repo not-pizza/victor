@@ -1,7 +1,7 @@
+mod db;
 mod filesystem;
 mod similarity;
 mod utils;
-mod db;
 
 #[cfg(test)]
 mod tests;
@@ -39,7 +39,7 @@ pub async fn write_embedding(root: FileSystemDirectoryHandle, embedding: &[f64],
 
     let embedding = embedding.iter().map(|x| *x as f32).collect::<Vec<_>>();
 
-    victor.write(embedding, content).await;
+    victor.write(embedding, content, vec![]).await;
 }
 
 /// Assumes all the embeddings are the size of `embedding`
@@ -51,7 +51,7 @@ pub async fn find_nearest_neighbor(root: FileSystemDirectoryHandle, embedding: &
 
     let embedding = embedding.iter().map(|x| *x as f32).collect::<Vec<_>>();
 
-    let nearest = victor.find_nearest_neighbor(embedding).await;
+    let nearest = victor.find_nearest_neighbor(embedding, vec![]).await;
 
     if let Some(nearest) = nearest {
         wasm_bindgen::JsValue::from_str(&nearest.content)
