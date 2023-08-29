@@ -14,7 +14,7 @@ pub struct CreateWritableOptions {
 }
 
 #[async_trait(?Send)]
-pub trait DirectoryHandle {
+pub trait DirectoryHandle: Debug {
     type Error: Debug;
     type FileHandleT: FileHandle<Error = Self::Error>;
 
@@ -26,7 +26,7 @@ pub trait DirectoryHandle {
 }
 
 #[async_trait(?Send)]
-pub trait FileHandle {
+pub trait FileHandle: Debug {
     type Error: Debug;
     type WritableFileStreamT: WritableFileStream<Error = Self::Error>;
 
@@ -37,11 +37,11 @@ pub trait FileHandle {
 
     async fn read(&self) -> Result<Vec<u8>, Self::Error>;
 
-    async fn get_size(&self) -> Result<usize, Self::Error>;
+    async fn size(&self) -> Result<usize, Self::Error>;
 }
 
 #[async_trait(?Send)]
-pub trait WritableFileStream {
+pub trait WritableFileStream: Debug {
     type Error: Debug;
 
     async fn write_at_cursor_pos(&mut self, data: Vec<u8>) -> Result<(), Self::Error>;
