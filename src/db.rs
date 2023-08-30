@@ -33,85 +33,6 @@ pub struct Index {
     files: HashSet<BTreeSet<String>>,
 }
 
-impl Index {
-    async fn load<D: DirectoryHandle>(root: &mut D) -> Result<(D::FileHandleT, Self), D::Error> {
-        let file_handle = root
-            .get_file_handle_with_options("index.bin", &GetFileHandleOptions { create: true })
-            .await?;
-
-        if file_handle.size().await? == 0 {
-            let index = Self::default();
-            Ok((file_handle, index))
-        } else {
-            let index_bytes = file_handle.read().await?;
-            let index =
-                bincode::deserialize::<Self>(&index_bytes).expect("Failed to deserialize index");
-            Ok((file_handle, index))
-        }
-    }
-
-    async fn file_handle_for_tag<D: DirectoryHandle>(
-        root: &mut D,
-        tags: BTreeSet<String>,
-    ) -> Result<D::FileHandleT, D::Error> {
-        // Get the filename by just hashing the tags
-        let filename = {
-            let mut tags = tags.into_iter().collect::<Vec<_>>();
-            tags.sort();
-            let input = format!("{:?}", tags);
-            format!("{}.bin", digest(input))
-        };
-
-        root.get_file_handle_with_options(&filename, &GetFileHandleOptions { create: true })
-            .await
-    }
-
-    async fn get_exact_db_file<D: DirectoryHandle>(
-        root: &mut D,
-        tags: Vec<String>,
-    ) -> Result<D::FileHandleT, D::Error> {
-        let (mut index_file, mut index) = Self::load(root).await?;
-        let tags = tags.into_iter().collect::<BTreeSet<_>>();
-
-        // If the set of tags isn't in the index, add it
-        if !index.files.contains(&tags) {
-            index.files.insert(tags.clone());
-
-            let index_bytes = bincode::serialize(&index).expect("Failed to serialize index");
-            let mut writable = index_file
-                .create_writable_with_options(&CreateWritableOptions {
-                    keep_existing_data: false,
-                })
-                .await?;
-            writable.write_at_cursor_pos(index_bytes).await?;
-            writable.close().await?;
-        }
-
-        Self::file_handle_for_tag(root, tags).await
-    }
-
-    async fn get_matching_db_files<D: DirectoryHandle>(
-        root: &mut D,
-        tags: BTreeSet<String>,
-    ) -> Result<Vec<D::FileHandleT>, D::Error> {
-        let (_, index) = Self::load(root).await?;
-
-        let matching_tags = index
-            .files
-            .iter()
-            .filter(|file_tags| file_tags.is_superset(&tags))
-            .cloned();
-
-        let mut files = Vec::new();
-        for tags in matching_tags {
-            let file = Self::file_handle_for_tag(root, tags.clone()).await?;
-            files.push(file)
-        }
-
-        Ok(files)
-    }
-}
-
 impl<D: DirectoryHandle> Victor<D> {
     pub(crate) fn new(root: D) -> Self {
         Self { root }
@@ -266,5 +187,114 @@ impl<D: DirectoryHandle> Victor<D> {
         let content = hashmap.get(&id).unwrap();
 
         content.to_string()
+    }
+
+    pub(crate) async fn clear_db(&mut self) -> Result<(), D::Error> {
+        // clear db files
+        let files = Index::get_all_db_filenames(&mut self.root).await?;
+        for file in files {
+            self.root.remove_entry(&file).await?;
+        }
+
+        // clear index file
+        self.root.remove_entry("index.bin").await?;
+
+        // clear content file
+        self.root.remove_entry("content.bin").await?;
+
+        Ok(())
+    }
+}
+
+impl Index {
+    async fn load<D: DirectoryHandle>(root: &mut D) -> Result<(D::FileHandleT, Self), D::Error> {
+        let file_handle = root
+            .get_file_handle_with_options("index.bin", &GetFileHandleOptions { create: true })
+            .await?;
+
+        if file_handle.size().await? == 0 {
+            let index = Self::default();
+            Ok((file_handle, index))
+        } else {
+            let index_bytes = file_handle.read().await?;
+            let index =
+                bincode::deserialize::<Self>(&index_bytes).expect("Failed to deserialize index");
+            Ok((file_handle, index))
+        }
+    }
+
+    fn filename_for_tags(tags: BTreeSet<String>) -> String {
+        let mut tags = tags.into_iter().collect::<Vec<_>>();
+        tags.sort();
+        let input = format!("{:?}", tags);
+        format!("{}.bin", digest(input))
+    }
+
+    async fn file_handle_for_tag<D: DirectoryHandle>(
+        root: &mut D,
+        tags: BTreeSet<String>,
+    ) -> Result<D::FileHandleT, D::Error> {
+        // Get the filename by just hashing the tags
+        let filename = Self::filename_for_tags(tags);
+
+        root.get_file_handle_with_options(&filename, &GetFileHandleOptions { create: true })
+            .await
+    }
+
+    async fn get_exact_db_file<D: DirectoryHandle>(
+        root: &mut D,
+        tags: Vec<String>,
+    ) -> Result<D::FileHandleT, D::Error> {
+        let (mut index_file, mut index) = Self::load(root).await?;
+        let tags = tags.into_iter().collect::<BTreeSet<_>>();
+
+        // If the set of tags isn't in the index, add it
+        if !index.files.contains(&tags) {
+            index.files.insert(tags.clone());
+
+            let index_bytes = bincode::serialize(&index).expect("Failed to serialize index");
+            let mut writable = index_file
+                .create_writable_with_options(&CreateWritableOptions {
+                    keep_existing_data: false,
+                })
+                .await?;
+            writable.write_at_cursor_pos(index_bytes).await?;
+            writable.close().await?;
+        }
+
+        Self::file_handle_for_tag(root, tags).await
+    }
+
+    async fn get_matching_db_files<D: DirectoryHandle>(
+        root: &mut D,
+        tags: BTreeSet<String>,
+    ) -> Result<Vec<D::FileHandleT>, D::Error> {
+        let (_, index) = Self::load(root).await?;
+
+        let matching_tags = index
+            .files
+            .iter()
+            .filter(|file_tags| file_tags.is_superset(&tags))
+            .cloned();
+
+        let mut files = Vec::new();
+        for tags in matching_tags {
+            let file = Self::file_handle_for_tag(root, tags.clone()).await?;
+            files.push(file)
+        }
+
+        Ok(files)
+    }
+
+    async fn get_all_db_filenames<D: DirectoryHandle>(
+        root: &mut D,
+    ) -> Result<Vec<String>, D::Error> {
+        let (_, index) = Self::load(root).await?;
+
+        Ok(index
+            .files
+            .into_iter()
+            .map(Self::filename_for_tags)
+            .collect())
     }
 }

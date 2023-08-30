@@ -54,6 +54,12 @@ impl filesystem::DirectoryHandle for DirectoryHandle {
             DirectoryEntry::File(file) => Ok(file),
         }
     }
+
+    async fn remove_entry(&mut self, name: &str) -> Result<(), Self::Error> {
+        let mut directory = self.0.borrow_mut();
+        directory.remove(name);
+        Ok(())
+    }
 }
 
 impl DirectoryHandle {
