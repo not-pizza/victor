@@ -99,7 +99,7 @@ async function clearDb() {
   const root = await navigator.storage.getDirectory();
   if (root) {
     try {
-      await root.removeEntry('victor.bin');
+      await victor.clear_db(root);
     } catch (e) {
       console.log('could not clear:', e);
     }

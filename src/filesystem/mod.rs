@@ -23,6 +23,8 @@ pub trait DirectoryHandle: Debug {
         name: &str,
         options: &GetFileHandleOptions,
     ) -> Result<Self::FileHandleT, Self::Error>;
+
+    async fn remove_entry(&mut self, name: &str) -> Result<(), Self::Error>;
 }
 
 #[async_trait(?Send)]

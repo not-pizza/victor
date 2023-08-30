@@ -63,6 +63,11 @@ impl filesystem::DirectoryHandle for DirectoryHandle {
         );
         Ok(FileHandle(file_system_file_handle))
     }
+
+    async fn remove_entry(&mut self, name: &str) -> Result<(), Self::Error> {
+        JsFuture::from(self.0.remove_entry(name)).await?;
+        Ok(())
+    }
 }
 
 #[async_trait(?Send)]

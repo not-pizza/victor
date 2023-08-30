@@ -24,8 +24,7 @@ wasm-bindgen-futures = "0.4.37"
 js-sys = "0.3"
 console_error_panic_hook = "0.1.7"
 async-trait = "0.1"
-sha256 = "1"
-futures = "0.3.28"
+sha256 = {version = "1", default-features = false}
 
 [dependencies.uuid]
 version = "1.4.1"

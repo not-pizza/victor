@@ -59,3 +59,12 @@ pub async fn find_nearest_neighbor(root: FileSystemDirectoryHandle, embedding: &
         wasm_bindgen::JsValue::NULL
     }
 }
+
+/// Assumes all the embeddings are the size of `embedding`
+#[wasm_bindgen]
+pub async fn clear_db(root: FileSystemDirectoryHandle) {
+    utils::set_panic_hook();
+
+    let mut victor = Victor::new(filesystem::web::DirectoryHandle::from(root));
+    victor.clear_db().await.unwrap();
+}
