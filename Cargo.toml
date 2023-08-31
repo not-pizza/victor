@@ -24,7 +24,7 @@ wasm-bindgen-futures = "0.4.37"
 js-sys = "0.3"
 console_error_panic_hook = "0.1.7"
 async-trait = "0.1"
-sha256 = {version = "1", default-features = false}
+sha256 = { version = "1", default-features = false }
 
 [dependencies.uuid]
 version = "1.4.1"
@@ -42,6 +42,7 @@ features = ["js"]
 [dev-dependencies]
 wasm-bindgen-test = "0.3.34"
 tokio = { version = "1", features = ["rt", "macros"] }
+rand = "0.8.5"
 
 [profile.release]
 # Tell `rustc` to optimize for small code size.
