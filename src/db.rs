@@ -19,6 +19,10 @@ pub struct Victor<D> {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Embedding {
     pub id: Uuid,
+    #[serde(
+        serialize_with = "crate::packed_vector::PackedVector::serialize_embedding",
+        deserialize_with = "crate::packed_vector::PackedVector::deserialize_embedding"
+    )]
     pub embedding: Vec<f32>,
 }
 
