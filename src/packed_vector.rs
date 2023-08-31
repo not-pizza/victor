@@ -1,4 +1,5 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
 #[derive(Debug, Serialize, Deserialize)]
 pub(crate) struct PackedVector {
     data: Vec<u8>,
