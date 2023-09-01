@@ -7,20 +7,35 @@ mod utils;
 #[cfg(test)]
 mod tests;
 
-use db::Victor;
-use wasm_bindgen::prelude::*;
-use web_sys::FileSystemDirectoryHandle;
+#[cfg(not(target_arch = "wasm32"))]
+use std::path::Path;
 
+use db::Victor;
+
+#[cfg(target_arch = "wasm32")]
+use {wasm_bindgen::prelude::*, web_sys::FileSystemDirectoryHandle};
+
+// Native
+
+#[cfg(not(target_arch = "wasm32"))]
+fn native_db(path: &Path) {
+    todo!()
+}
+
+// Wasm
+
+#[cfg(target_arch = "wasm32")]
 #[allow(unused_macros)]
 macro_rules! console_log {
     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
 }
 
+#[cfg(target_arch = "wasm32")]
 #[allow(unused_macros)]
 macro_rules! console_warn {
     ($($t:tt)*) => (warn(&format_args!($($t)*).to_string()))
 }
-
+#[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_namespace = console)]
@@ -29,6 +44,7 @@ extern "C" {
     fn warn(s: &str);
 }
 
+#[cfg(target_arch = "wasm32")]
 /// Assumes all the embeddings are the size of `embedding`
 /// TODO: Record the embedding size somewhere so we can return an error if
 /// the sizes are wrong (as otherwise this will corrupt the entire db)
@@ -43,6 +59,7 @@ pub async fn write_embedding(root: FileSystemDirectoryHandle, embedding: &[f64],
     victor.write(embedding, content, vec![]).await;
 }
 
+#[cfg(target_arch = "wasm32")]
 /// Assumes all the embeddings are the size of `embedding`
 #[wasm_bindgen]
 pub async fn find_nearest_neighbor(root: FileSystemDirectoryHandle, embedding: &[f64]) -> JsValue {
@@ -61,6 +78,7 @@ pub async fn find_nearest_neighbor(root: FileSystemDirectoryHandle, embedding: &
     }
 }
 
+#[cfg(target_arch = "wasm32")]
 /// Assumes all the embeddings are the size of `embedding`
 #[wasm_bindgen]
 pub async fn clear_db(root: FileSystemDirectoryHandle) {

@@ -1,5 +1,10 @@
 pub mod memory;
+
+#[cfg(target_arch = "wasm32")]
 pub mod web;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub mod native;
 
 use std::fmt::Debug;
 
