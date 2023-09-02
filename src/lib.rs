@@ -7,19 +7,25 @@ mod utils;
 #[cfg(test)]
 mod tests;
 
-#[cfg(not(target_arch = "wasm32"))]
-use std::path::Path;
-
-use db::Victor;
-
 #[cfg(target_arch = "wasm32")]
 use {wasm_bindgen::prelude::*, web_sys::FileSystemDirectoryHandle};
 
 // Native
 
 #[cfg(not(target_arch = "wasm32"))]
-fn native_db(path: &Path) {
-    todo!()
+pub mod native {
+    use crate::db::Victor;
+
+    pub type Db = Victor<crate::filesystem::native::DirectoryHandle>;
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub mod memory {
+    use crate::db::Victor;
+
+    pub use crate::filesystem::memory::DirectoryHandle;
+
+    pub type Db = Victor<DirectoryHandle>;
 }
 
 // Wasm

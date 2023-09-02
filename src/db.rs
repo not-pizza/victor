@@ -38,11 +38,12 @@ pub struct Index {
 }
 
 impl<D: DirectoryHandle> Victor<D> {
-    pub(crate) fn new(root: D) -> Self {
+    pub fn new(root: impl Into<D>) -> Self {
+        let root = root.into();
         Self { root }
     }
 
-    pub(crate) async fn write(&mut self, embedding: Vec<f32>, content: &str, tags: Vec<String>) {
+    pub async fn write(&mut self, embedding: Vec<f32>, content: &str, tags: Vec<String>) {
         let id = Uuid::new_v4();
 
         let embedding = Embedding { id, embedding };
@@ -51,7 +52,7 @@ impl<D: DirectoryHandle> Victor<D> {
         self.write_content(content, id).await.unwrap();
     }
 
-    pub(crate) async fn find_nearest_neighbor(
+    pub async fn find_nearest_neighbor(
         &mut self,
         vector: Vec<f32>,
         with_tags: Vec<String>,
@@ -193,7 +194,7 @@ impl<D: DirectoryHandle> Victor<D> {
         content.to_string()
     }
 
-    pub(crate) async fn clear_db(&mut self) -> Result<(), D::Error> {
+    pub async fn clear_db(&mut self) -> Result<(), D::Error> {
         // clear db files
         let files = Index::get_all_db_filenames(&mut self.root).await?;
         for file in files {

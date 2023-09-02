@@ -6,13 +6,31 @@ use tokio::io::{AsyncSeekExt, AsyncWriteExt};
 use crate::filesystem;
 
 #[derive(Debug)]
-pub(crate) struct DirectoryHandle(PathBuf);
+pub struct DirectoryHandle(PathBuf);
 
 #[derive(Debug)]
-pub(crate) struct FileHandle(PathBuf);
+pub struct FileHandle(PathBuf);
 
 #[derive(Debug)]
-pub(crate) struct WritableFileStream(tokio::fs::File);
+pub struct WritableFileStream(tokio::fs::File);
+
+impl From<PathBuf> for DirectoryHandle {
+    fn from(handle: PathBuf) -> Self {
+        Self(handle)
+    }
+}
+
+impl From<PathBuf> for FileHandle {
+    fn from(handle: PathBuf) -> Self {
+        Self(handle)
+    }
+}
+
+impl From<tokio::fs::File> for WritableFileStream {
+    fn from(handle: tokio::fs::File) -> Self {
+        Self(handle)
+    }
+}
 
 #[async_trait(?Send)]
 impl filesystem::DirectoryHandle for DirectoryHandle {
@@ -27,7 +45,8 @@ impl filesystem::DirectoryHandle for DirectoryHandle {
         let mut path = self.0.clone();
         path.push(name);
 
-        let file = tokio::fs::OpenOptions::new()
+        // Make sure the file exists
+        let _ = tokio::fs::OpenOptions::new()
             .read(true)
             .write(true)
             .create(options.create)
@@ -90,8 +109,8 @@ impl filesystem::FileHandle for FileHandle {
 impl filesystem::WritableFileStream for WritableFileStream {
     type Error = std::io::Error;
 
-    async fn write_at_cursor_pos(&mut self, mut data: Vec<u8>) -> Result<(), Self::Error> {
-        self.0.write_all(&mut data).await?;
+    async fn write_at_cursor_pos(&mut self, data: Vec<u8>) -> Result<(), Self::Error> {
+        self.0.write_all(&data).await?;
         Ok(())
     }
 
