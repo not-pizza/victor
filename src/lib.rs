@@ -10,6 +10,9 @@ mod tests;
 #[cfg(target_arch = "wasm32")]
 use {wasm_bindgen::prelude::*, web_sys::FileSystemDirectoryHandle};
 
+#[cfg(target_arch = "wasm32")]
+type Victor = crate::db::Victor<filesystem::web::DirectoryHandle>;
+
 // Native
 
 #[cfg(not(target_arch = "wasm32"))]
