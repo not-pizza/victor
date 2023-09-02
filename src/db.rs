@@ -43,7 +43,14 @@ impl<D: DirectoryHandle> Victor<D> {
         Self { root }
     }
 
-    pub async fn write(&mut self, embedding: Vec<f32>, content: &str, tags: Vec<String>) {
+    pub async fn write(
+        &mut self,
+        embedding: Vec<f32>,
+        content: impl Into<String>,
+        tags: Vec<String>,
+    ) {
+        let content = content.into();
+
         let id = Uuid::new_v4();
 
         let embedding = Embedding { id, embedding };
@@ -147,7 +154,7 @@ impl<D: DirectoryHandle> Victor<D> {
         Ok(())
     }
 
-    async fn write_content(&mut self, content: &str, id: Uuid) -> Result<(), D::Error> {
+    async fn write_content(&mut self, content: String, id: Uuid) -> Result<(), D::Error> {
         let mut content_file_handle = self
             .root
             .get_file_handle_with_options("content.bin", &GetFileHandleOptions { create: true })
@@ -161,7 +168,7 @@ impl<D: DirectoryHandle> Victor<D> {
             bincode::deserialize(&existing_content).expect("Failed to deserialize existing data")
         };
 
-        hashmap.insert(id, content.to_string());
+        hashmap.insert(id, content);
 
         let updated_data = bincode::serialize(&hashmap).expect("Failed to serialize hashmap");
 
