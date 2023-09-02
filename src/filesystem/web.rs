@@ -17,6 +17,7 @@ pub(crate) struct FileHandle(FileSystemFileHandle);
 
 #[derive(Debug)]
 pub(crate) struct WritableFileStream(FileSystemWritableFileStream);
+
 #[derive(Debug)]
 pub(crate) struct Blob(web_sys::Blob);
 
@@ -95,7 +96,7 @@ impl filesystem::FileHandle for FileHandle {
         self.get_file().await?.read().await
     }
 
-    async fn size(&self) -> Result<usize, JsValue> {
+    async fn size(&self) -> Result<usize, Self::Error> {
         let size = self.get_file().await?.size();
         Ok(size)
     }

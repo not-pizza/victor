@@ -38,11 +38,19 @@ pub struct Index {
 }
 
 impl<D: DirectoryHandle> Victor<D> {
-    pub(crate) fn new(root: D) -> Self {
+    pub fn new(root: impl Into<D>) -> Self {
+        let root = root.into();
         Self { root }
     }
 
-    pub(crate) async fn write(&mut self, embedding: Vec<f32>, content: &str, tags: Vec<String>) {
+    pub async fn write(
+        &mut self,
+        embedding: Vec<f32>,
+        content: impl Into<String>,
+        tags: Vec<String>,
+    ) {
+        let content = content.into();
+
         let id = Uuid::new_v4();
 
         let embedding = Embedding { id, embedding };
@@ -51,7 +59,7 @@ impl<D: DirectoryHandle> Victor<D> {
         self.write_content(content, id).await.unwrap();
     }
 
-    pub(crate) async fn find_nearest_neighbor(
+    pub async fn find_nearest_neighbor(
         &mut self,
         vector: Vec<f32>,
         with_tags: Vec<String>,
@@ -146,7 +154,7 @@ impl<D: DirectoryHandle> Victor<D> {
         Ok(())
     }
 
-    async fn write_content(&mut self, content: &str, id: Uuid) -> Result<(), D::Error> {
+    async fn write_content(&mut self, content: String, id: Uuid) -> Result<(), D::Error> {
         let mut content_file_handle = self
             .root
             .get_file_handle_with_options("content.bin", &GetFileHandleOptions { create: true })
@@ -160,7 +168,7 @@ impl<D: DirectoryHandle> Victor<D> {
             bincode::deserialize(&existing_content).expect("Failed to deserialize existing data")
         };
 
-        hashmap.insert(id, content.to_string());
+        hashmap.insert(id, content);
 
         let updated_data = bincode::serialize(&hashmap).expect("Failed to serialize hashmap");
 
@@ -193,7 +201,7 @@ impl<D: DirectoryHandle> Victor<D> {
         content.to_string()
     }
 
-    pub(crate) async fn clear_db(&mut self) -> Result<(), D::Error> {
+    pub async fn clear_db(&mut self) -> Result<(), D::Error> {
         // clear db files
         let files = Index::get_all_db_filenames(&mut self.root).await?;
         for file in files {

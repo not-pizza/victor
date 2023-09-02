@@ -7,20 +7,44 @@ mod utils;
 #[cfg(test)]
 mod tests;
 
-use db::Victor;
-use wasm_bindgen::prelude::*;
-use web_sys::FileSystemDirectoryHandle;
+#[cfg(target_arch = "wasm32")]
+use {wasm_bindgen::prelude::*, web_sys::FileSystemDirectoryHandle};
 
+#[cfg(target_arch = "wasm32")]
+type Victor = crate::db::Victor<filesystem::web::DirectoryHandle>;
+
+// Native
+
+#[cfg(not(target_arch = "wasm32"))]
+pub mod native {
+    use crate::db::Victor;
+
+    pub type Db = Victor<crate::filesystem::native::DirectoryHandle>;
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub mod memory {
+    use crate::db::Victor;
+
+    pub use crate::filesystem::memory::DirectoryHandle;
+
+    pub type Db = Victor<DirectoryHandle>;
+}
+
+// Wasm
+
+#[cfg(target_arch = "wasm32")]
 #[allow(unused_macros)]
 macro_rules! console_log {
     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
 }
 
+#[cfg(target_arch = "wasm32")]
 #[allow(unused_macros)]
 macro_rules! console_warn {
     ($($t:tt)*) => (warn(&format_args!($($t)*).to_string()))
 }
-
+#[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_namespace = console)]
@@ -29,6 +53,7 @@ extern "C" {
     fn warn(s: &str);
 }
 
+#[cfg(target_arch = "wasm32")]
 /// Assumes all the embeddings are the size of `embedding`
 /// TODO: Record the embedding size somewhere so we can return an error if
 /// the sizes are wrong (as otherwise this will corrupt the entire db)
@@ -43,6 +68,7 @@ pub async fn write_embedding(root: FileSystemDirectoryHandle, embedding: &[f64],
     victor.write(embedding, content, vec![]).await;
 }
 
+#[cfg(target_arch = "wasm32")]
 /// Assumes all the embeddings are the size of `embedding`
 #[wasm_bindgen]
 pub async fn find_nearest_neighbor(root: FileSystemDirectoryHandle, embedding: &[f64]) -> JsValue {
@@ -61,6 +87,7 @@ pub async fn find_nearest_neighbor(root: FileSystemDirectoryHandle, embedding: &
     }
 }
 
+#[cfg(target_arch = "wasm32")]
 /// Assumes all the embeddings are the size of `embedding`
 #[wasm_bindgen]
 pub async fn clear_db(root: FileSystemDirectoryHandle) {

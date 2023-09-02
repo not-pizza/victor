@@ -1,10 +1,10 @@
-use crate::{db::Victor, filesystem::memory};
+use crate::memory::{Db, DirectoryHandle};
 
 #[tokio::test]
 async fn store_and_retrieve() {
     let embedding = vec![1.0, 2.0, 3.0];
 
-    let mut victor = Victor::new(memory::DirectoryHandle::new());
+    let mut victor = Db::new(DirectoryHandle::new());
 
     victor.write(embedding.clone(), "hello", vec![]).await;
 
@@ -22,7 +22,7 @@ async fn store_two_and_retrieve() {
     let embedding_1 = vec![1.0, 2.0, 3.0];
     let embedding_2 = vec![-1.0, -2.0, -3.0];
 
-    let mut victor = Victor::new(memory::DirectoryHandle::new());
+    let mut victor = Db::new(DirectoryHandle::new());
 
     victor.write(embedding_1.clone(), "hello", vec![]).await;
     victor.write(embedding_2.clone(), "goodbye", vec![]).await;
@@ -52,7 +52,7 @@ async fn store_two_and_retrieve_with_tags() {
     let embedding_1 = vec![1.0, 2.0, 3.0];
     let embedding_2 = vec![-1.0, -2.0, -3.0];
 
-    let mut victor = Victor::new(memory::DirectoryHandle::new());
+    let mut victor = Db::new(DirectoryHandle::new());
 
     victor
         .write(embedding_1.clone(), "hello", vec!["greetings".to_string()])

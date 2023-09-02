@@ -3,5 +3,6 @@
         "bincode",
         "bindgen",
         "openai"
-    ]
+    ],
+    "rust-analyzer.cargo.target": "wasm32-unknown-unknown",
 }

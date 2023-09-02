@@ -7,20 +7,20 @@ use async_trait::async_trait;
 use crate::filesystem;
 
 #[derive(Debug, Clone)]
-pub(crate) enum DirectoryEntry {
+pub enum DirectoryEntry {
     #[allow(dead_code)]
     Directory(DirectoryHandle),
     File(FileHandle),
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct DirectoryHandle(Rc<RefCell<HashMap<String, DirectoryEntry>>>);
+pub struct DirectoryHandle(Rc<RefCell<HashMap<String, DirectoryEntry>>>);
 
 #[derive(Debug, Clone)]
-pub(crate) struct FileHandle(WritableFileStream);
+pub struct FileHandle(WritableFileStream);
 
 #[derive(Debug, Clone)]
-pub(crate) struct WritableFileStream {
+pub struct WritableFileStream {
     cursor_pos: usize,
     stream: Rc<RefCell<Vec<u8>>>,
 }
