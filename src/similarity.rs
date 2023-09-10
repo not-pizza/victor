@@ -1,7 +1,4 @@
-pub(crate) fn cosine(v1: Vec<f32>, v2: Vec<f32>) -> Result<f32, String> {
-    // written by copilot
-    // wtf
-    // seems right from looking at wikipedia
+pub(crate) fn cosine(v1: &[f32], v2: &[f32]) -> Result<f32, String> {
     if v1.len() != v2.len() {
         return Err(format!(
             "Vector lengths do not match: {} != {}",
@@ -24,6 +21,25 @@ pub(crate) fn cosine(v1: Vec<f32>, v2: Vec<f32>) -> Result<f32, String> {
     v2_norm = v2_norm.sqrt();
 
     Ok(dot_product / (v1_norm * v2_norm))
+}
+
+pub(crate) fn euclidean(v1: &[f32], v2: &[f32]) -> Result<f32, String> {
+    if v1.len() != v2.len() {
+        return Err(format!(
+            "Vector lengths do not match: {} != {}",
+            v1.len(),
+            v2.len()
+        ));
+    }
+
+    let mut sum_of_squares = 0.0;
+
+    for i in 0..v1.len() {
+        let difference = v1[i] - v2[i];
+        sum_of_squares += difference * difference;
+    }
+
+    Ok(sum_of_squares.sqrt())
 }
 
 #[test]
