@@ -1,4 +1,5 @@
 mod db;
+mod decomposition;
 mod filesystem;
 mod packed_vector;
 mod similarity;

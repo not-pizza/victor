@@ -44,26 +44,45 @@ async function fetchEmbedding(
   }
 }
 
-async function storeEmbedding(embedInput: string, openaiApiKey: string) {
+async function storeEmbedding(
+  embedInput: string,
+  openaiApiKey: string,
+  shouldStore = true,
+  shouldSearch = true,
+) {
   const embedResponse = await fetchEmbedding(embedInput, openaiApiKey);
 
   if (!embedResponse.success) {
     return;
   }
 
-  console.log(embedResponse.data);
-
   const root = await navigator.storage.getDirectory();
 
   const embedding = new Float64Array(embedResponse.data.data[0].embedding);
 
-  let current_nearest = await victor.find_nearest_neighbor(root, embedding);
-  console.log('nearest:', current_nearest);
+  if (shouldSearch) {
+    const result = await victor.find_nearest_neighbor(root, embedding);
+    console.log(result);
+  }
 
-  await victor.write_embedding(root, embedding, embedInput);
+  if (shouldStore) {
+    await victor.write_embedding(root, embedding, embedInput);
+  }
 }
 
-async function onSubmitStoreEmbedding() {
+async function storeFlatlandEmbedding(
+  embedding: number[],
+  embeddingText: string,
+) {
+  const root = await navigator.storage.getDirectory();
+  await victor.write_embedding(
+    root,
+    new Float64Array(embedding),
+    embeddingText,
+  );
+}
+
+async function onSubmitEmbedding() {
   const openaiApiKey = (
     document.querySelector('input[name="openai"]') as HTMLInputElement
   ).value;
@@ -71,16 +90,31 @@ async function onSubmitStoreEmbedding() {
     localStorage.setItem('openaiApiKey', openaiApiKey);
   }
   const embedInput = (
-    document.querySelector('input[name="embedInput"]') as HTMLInputElement
+    document.querySelector('textarea[name="embedInput"]') as HTMLInputElement
   ).value;
 
-  await storeEmbedding(embedInput, openaiApiKey);
+  const searchInput = (
+    document.querySelector('textarea[name="searchInput"]') as HTMLInputElement
+  ).value;
+
+  await storeEmbedding(
+    !!embedInput ? embedInput : searchInput,
+    openaiApiKey,
+    !!embedInput,
+    !!searchInput,
+  );
 }
 
 async function embedFlatlands() {
-  flatland.paragraphs.forEach(async (paragraph: string) => {
-    await storeEmbedding(paragraph, localStorage.getItem('openaiApiKey'));
-  });
+  for (let i = 0; i < flatland.paragraphs.length; i++) {
+    const paragraph = flatland.paragraphs[i];
+    const embedding = flatland.embeddings[i];
+    if (embedding && paragraph.length > 25) {
+      console.log(flatland.paragraphs.length - i);
+      await storeFlatlandEmbedding(embedding[0] as number[], paragraph);
+    }
+    console.log(flatland.paragraphs.length - i);
+  }
 }
 
 function restoreOpenaiApiKey() {
@@ -107,6 +141,6 @@ async function clearDb() {
 }
 
 // Expose the functions to the global window object so they're accessible from HTML
-(window as any).onSubmitStoreEmbedding = onSubmitStoreEmbedding;
+(window as any).onSubmitEmbedding = onSubmitEmbedding;
 (window as any).clearDb = clearDb;
 (window as any).embedFlatlands = embedFlatlands;

@@ -12,10 +12,18 @@
     <form>
       <label for="openai">Your OpenAI API Key</label>
       <input type="password" name="openai">
-      <label for="embedInput">Embed this text:</label>
-      <input type="text" name="embedInput">
+      <div style="display: flex; gap: 16px;">
+        <div>
+          <label for="embedInput">Embed this text:</label>
+          <textarea name="embedInput"></textarea>
+        </div>
+        <div>
+          <label for="searchInput">Search this text:</label>
+          <textarea name="searchInput"></textarea>
+        </div>
+      </div>
     </form>
-    <button type="button" onclick="onSubmitStoreEmbedding()">Submit</button>
+    <button type="button" onclick="onSubmitEmbedding(true)">Submit</button>
   </div>
   <div>
     <button type="button" onclick="clearDb()">Clear Victor</button>
