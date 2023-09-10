@@ -434,13 +434,13 @@ impl<D: DirectoryHandle> Victor<D> {
         }
 
         // clear index file
-        self.root.remove_entry("index.bin").await?;
+        let _ = self.root.remove_entry("index.bin").await;
 
         // clear content file
-        self.root.remove_entry("content.bin").await?;
+        let _ = self.root.remove_entry("content.bin").await;
 
         // clear content file
-        self.root.remove_entry("eigen.bin").await?;
+        let _ = self.root.remove_entry("eigen.bin").await;
 
         Ok(())
     }

@@ -121,9 +121,7 @@ pub async fn clear_db(root: FileSystemDirectoryHandle) {
 
     let mut victor = Victor::new(filesystem::web::DirectoryHandle::from(root));
     let result = victor.clear_db().await; // ignore the error if there is one
-    if result.is_ok() {
-        console_log!("Victor data cleared");
-    } else {
+    if !result.is_ok() {
         console_warn!("Failed to clear victor data: {:?}", result);
     }
 }
