@@ -74,7 +74,7 @@ impl<D: DirectoryHandle> Victor<D> {
         Self { root }
     }
 
-    pub async fn write(&mut self, vector: Vec<f32>, content: impl Into<String>, tags: Vec<String>) {
+    pub async fn write(&mut self, content: impl Into<String>, vector: Vec<f32>, tags: Vec<String>) {
         let content = content.into();
 
         let id = Uuid::new_v4();

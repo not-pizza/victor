@@ -66,7 +66,7 @@ async function storeEmbedding(
   }
 
   if (shouldStore) {
-    await victor.write_embedding(root, embedding, embedInput);
+    await victor.write_embedding(root, embedInput, embedding);
   }
 }
 
@@ -77,8 +77,8 @@ async function storeFlatlandEmbedding(
   const root = await navigator.storage.getDirectory();
   await victor.write_embedding(
     root,
-    new Float64Array(embedding),
     embeddingText,
+    new Float64Array(embedding),
   );
 }
 
