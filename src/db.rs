@@ -74,7 +74,7 @@ impl<D: DirectoryHandle> Victor<D> {
         Self { root }
     }
 
-    pub async fn write(&mut self, vector: Vec<f32>, content: impl Into<String>, tags: Vec<String>) {
+    pub async fn write(&mut self, content: impl Into<String>, vector: Vec<f32>, tags: Vec<String>) {
         let content = content.into();
 
         let id = Uuid::new_v4();
@@ -434,13 +434,13 @@ impl<D: DirectoryHandle> Victor<D> {
         }
 
         // clear index file
-        self.root.remove_entry("index.bin").await?;
+        let _ = self.root.remove_entry("index.bin").await;
 
         // clear content file
-        self.root.remove_entry("content.bin").await?;
+        let _ = self.root.remove_entry("content.bin").await;
 
         // clear content file
-        self.root.remove_entry("eigen.bin").await?;
+        let _ = self.root.remove_entry("eigen.bin").await;
 
         Ok(())
     }

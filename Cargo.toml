@@ -1,8 +1,8 @@
 [package]
 name = "victor"
 version = "0.1.0"
-authors = ["Sam Hall <samuel27hall@gmail.com>"]
-edition = "2018"
+authors = ["Sam Hall <s@muel.email", "Andre Popovitch <andre@popovit.ch>"]
+edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

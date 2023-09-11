@@ -9,27 +9,26 @@
 
 <body>
   <div>
-    <form>
+    <form id="mainForm">
       <label for="openai">Your OpenAI API Key</label>
-      <input type="password" name="openai">
-      <div style="display: flex; gap: 16px;">
-        <div>
-          <label for="embedInput">Embed this text:</label>
-          <textarea name="embedInput"></textarea>
-        </div>
-        <div>
-          <label for="searchInput">Search this text:</label>
-          <textarea name="searchInput"></textarea>
-        </div>
+      <input type="password" id="openai" name="openai">
+      <div>
+        <label for="inputText">Input Text:</label>
+        <textarea id="inputText" name="inputText"></textarea>
+      </div>
+      <div>
+        <label for="tags">Tags:</label>
+        <input type="text" id="tags" name="tags">
       </div>
     </form>
-    <button type="button" onclick="onSubmitEmbedding(true)">Submit</button>
+    <button type="button" onclick="handleEmbed()">Embed</button>
+    <button type="button" onclick="handleSearch()">Search</button>
   </div>
   <div>
-    <button type="button" onclick="clearDb()">Clear Victor</button>
+    <button type="button" onclick="clearDatabase()">Clear Victor</button>
   </div>
   <div>
-    <button type="button" onclick="embedFlatlands()">Embed Flatlands</button>
+    <button type="button" onclick="embedAllFlatlands()">Embed Flatlands</button>
   </div>
   <script src="bootstrap.js"></script>
 </body>

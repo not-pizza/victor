@@ -59,27 +59,52 @@ extern "C" {
 /// TODO: Record the embedding size somewhere so we can return an error if
 /// the sizes are wrong (as otherwise this will corrupt the entire db)
 #[wasm_bindgen]
-pub async fn write_embedding(root: FileSystemDirectoryHandle, embedding: &[f64], content: &str) {
+pub async fn write_embedding(
+    root: FileSystemDirectoryHandle,
+    content: &str,
+    embedding: &[f64],
+    tags: Option<Vec<JsValue>>,
+) {
     utils::set_panic_hook();
 
     let mut victor = Victor::new(filesystem::web::DirectoryHandle::from(root));
 
     let embedding = embedding.iter().map(|x| *x as f32).collect::<Vec<_>>();
 
-    victor.write(embedding, content, vec![]).await;
+    let tags = tags
+        .map(|tags| {
+            tags.into_iter()
+                .map(|x| x.as_string().unwrap())
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or(vec![]);
+
+    victor.write(content, embedding, tags).await;
 }
 
 #[cfg(target_arch = "wasm32")]
 /// Assumes all the embeddings are the size of `embedding`
 #[wasm_bindgen]
-pub async fn find_nearest_neighbor(root: FileSystemDirectoryHandle, embedding: &[f64]) -> JsValue {
+pub async fn find_nearest_neighbor(
+    root: FileSystemDirectoryHandle,
+    embedding: &[f64],
+    tags: Option<Vec<JsValue>>,
+) -> JsValue {
     utils::set_panic_hook();
 
     let mut victor = Victor::new(filesystem::web::DirectoryHandle::from(root));
 
     let embedding = embedding.iter().map(|x| *x as f32).collect::<Vec<_>>();
 
-    let nearest = victor.find_nearest_neighbor(embedding, vec![]).await;
+    let tags = tags
+        .map(|tags| {
+            tags.into_iter()
+                .map(|x| x.as_string().unwrap())
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or(vec![]);
+
+    let nearest = victor.find_nearest_neighbor(embedding, tags).await;
 
     if let Some(nearest) = nearest {
         wasm_bindgen::JsValue::from_str(&nearest.content)
@@ -96,9 +121,7 @@ pub async fn clear_db(root: FileSystemDirectoryHandle) {
 
     let mut victor = Victor::new(filesystem::web::DirectoryHandle::from(root));
     let result = victor.clear_db().await; // ignore the error if there is one
-    if result.is_ok() {
-        console_log!("Victor data cleared");
-    } else {
+    if !result.is_ok() {
         console_warn!("Failed to clear victor data: {:?}", result);
     }
 }

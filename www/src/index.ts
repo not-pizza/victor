@@ -1,6 +1,5 @@
 import * as victor from 'victor';
 import flatland from './flatland.json';
-
 import { EmbeddingResponse } from '../types/openai';
 
 type Success<T> = {
@@ -15,10 +14,7 @@ type Failure = {
 
 type Result<T> = Success<T> | Failure;
 
-async function fetchEmbedding(
-  embedInput: string,
-  openaiApiKey: string,
-): Promise<Result<EmbeddingResponse>> {
+async function fetchEmbedding(embedInput: string, openaiApiKey: string): Promise<Result<EmbeddingResponse>> {
   try {
     const response = await fetch('https://api.openai.com/v1/embeddings', {
       method: 'POST',
@@ -44,68 +40,74 @@ async function fetchEmbedding(
   }
 }
 
-async function storeEmbedding(
-  embedInput: string,
-  openaiApiKey: string,
-  shouldStore = true,
-  shouldSearch = true,
-) {
+async function getRootDirectory(): Promise<FileSystemDirectoryHandle> {
+  return await navigator.storage.getDirectory();
+}
+
+async function storeEmbedding(embedInput: string, openaiApiKey: string, tags: string[]) {
   const embedResponse = await fetchEmbedding(embedInput, openaiApiKey);
 
   if (!embedResponse.success) {
     return;
   }
 
-  const root = await navigator.storage.getDirectory();
-
+  const root = await getRootDirectory();
   const embedding = new Float64Array(embedResponse.data.data[0].embedding);
+  await victor.write_embedding(root, embedInput, embedding, tags);
+}
 
-  if (shouldSearch) {
-    const result = await victor.find_nearest_neighbor(root, embedding);
-    console.log(result);
+async function searchEmbedding(embedInput: string, openaiApiKey: string, tags: string[]) {
+  const embedResponse = await fetchEmbedding(embedInput, openaiApiKey);
+
+  if (!embedResponse.success) {
+    return;
   }
 
-  if (shouldStore) {
-    await victor.write_embedding(root, embedding, embedInput);
+  const root = await getRootDirectory();
+  const embedding = new Float64Array(embedResponse.data.data[0].embedding);
+  const result = await victor.find_nearest_neighbor(root, embedding, tags);
+  console.log(result);
+}
+
+function getFormValues(): { openaiApiKey: string; inputText: string; tags: string[] } {
+  const openaiApiKey = (document.getElementById('openai') as HTMLInputElement).value;
+  const inputText = (document.getElementById('inputText') as HTMLInputElement).value;
+  const tags = (document.getElementById('tags') as HTMLInputElement).value.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
+
+  if (openaiApiKey) {
+    localStorage.setItem('openaiApiKey', openaiApiKey);
+  }
+
+  return { openaiApiKey, inputText, tags };
+}
+
+async function handleEmbed() {
+  const { openaiApiKey, inputText, tags } = getFormValues();
+
+  if (inputText) {
+    await storeEmbedding(inputText, openaiApiKey, tags);
   }
 }
 
-async function storeFlatlandEmbedding(
-  embedding: number[],
-  embeddingText: string,
-) {
+async function handleSearch() {
+  const { openaiApiKey, inputText, tags } = getFormValues();
+
+  if (inputText) {
+    await searchEmbedding(inputText, openaiApiKey, tags);
+  }
+}
+
+async function storeFlatlandEmbedding(embedding: number[], embeddingText: string) {
   const root = await navigator.storage.getDirectory();
   await victor.write_embedding(
     root,
-    new Float64Array(embedding),
     embeddingText,
+    new Float64Array(embedding),
+    ['flatland'],
   );
 }
 
-async function onSubmitEmbedding() {
-  const openaiApiKey = (
-    document.querySelector('input[name="openai"]') as HTMLInputElement
-  ).value;
-  if (openaiApiKey !== '' && openaiApiKey !== undefined) {
-    localStorage.setItem('openaiApiKey', openaiApiKey);
-  }
-  const embedInput = (
-    document.querySelector('textarea[name="embedInput"]') as HTMLInputElement
-  ).value;
-
-  const searchInput = (
-    document.querySelector('textarea[name="searchInput"]') as HTMLInputElement
-  ).value;
-
-  await storeEmbedding(
-    !!embedInput ? embedInput : searchInput,
-    openaiApiKey,
-    !!embedInput,
-    !!searchInput,
-  );
-}
-
-async function embedFlatlands() {
+async function embedAllFlatlands() {
   for (let i = 0; i < flatland.paragraphs.length; i++) {
     const paragraph = flatland.paragraphs[i];
     const embedding = flatland.embeddings[i];
@@ -116,6 +118,7 @@ async function embedFlatlands() {
     console.log(flatland.paragraphs.length - i);
   }
 }
+
 
 function restoreOpenaiApiKey() {
   console.log('restoring openai api key');
@@ -128,7 +131,7 @@ function restoreOpenaiApiKey() {
 
 restoreOpenaiApiKey();
 
-async function clearDb() {
+async function clearDatabase() {
   console.log('clearing db');
   const root = await navigator.storage.getDirectory();
   if (root) {
@@ -140,7 +143,8 @@ async function clearDb() {
   }
 }
 
-// Expose the functions to the global window object so they're accessible from HTML
-(window as any).onSubmitEmbedding = onSubmitEmbedding;
-(window as any).clearDb = clearDb;
-(window as any).embedFlatlands = embedFlatlands;
+// Exposing the functions to the global window object
+(window as any).handleEmbed = handleEmbed;
+(window as any).handleSearch = handleSearch;
+(window as any).clearDatabase = clearDatabase;
+(window as any).embedAllFlatlands = embedAllFlatlands;
