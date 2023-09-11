@@ -41,6 +41,8 @@ assert(result == content);
 await victor.clear_db(root);
 ```
 
+See `www/` for a more complete example, including fetching embeddings from OpenAI.
+
 ## Hacking
 
 1. Victor is written in Rust, and compiled to wasm with wasm-pack.
