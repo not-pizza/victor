@@ -7,6 +7,7 @@ Web-optimized vector database (written in Rust).
 1. Rust API (using native filesystem, or a transient in-memory filesystem)
 2. Web API (Using the [Private Origin File System](https://web.dev/origin-private-file-system/))
 3. Very efficient vector storage format
+   1. For a vector with 1536 dimensions, our representation consumes 1.5 KB, while naively encoding with JSON would consume 20.6 KB.
 4. PCA for vector compression when storage space is low
 
 ## Setup

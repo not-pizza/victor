@@ -134,6 +134,7 @@ restoreOpenaiApiKey();
 async function clearDatabase() {
   console.log('clearing db');
   const root = await navigator.storage.getDirectory();
+  console.log('root: ', root);
   if (root) {
     try {
       await victor.clear_db(root);

@@ -4,6 +4,8 @@ use nalgebra::DMatrix;
 use serde::{Deserialize, Serialize};
 use sha256::digest;
 use uuid::Uuid;
+
+#[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::decomposition::{center_data, embeddings_to_dmatrix, project_to_lower_dimension};
@@ -270,7 +272,7 @@ impl<D: DirectoryHandle> Victor<D> {
     async fn get_embeddings_by_file(&mut self, file: Vec<u8>) -> Vec<Embedding> {
         let header_size = std::mem::size_of::<u32>();
 
-        let embedding_size: u32 = Self::get_embedding_size(file.clone()).await;
+        let embedding_size: u32 = Self::get_embedding_size(file.clone());
 
         let file_content = &file[header_size..];
 
@@ -280,8 +282,7 @@ impl<D: DirectoryHandle> Victor<D> {
             assert_eq!(
                 file_size % embedding_size,
                 0,
-                "file_size ({}) was not a multiple of embedding_size ({embedding_size})",
-                file_size
+                "file_size ({file_size} after subtracting header size {header_size}) was not a multiple of embedding_size ({embedding_size})",
             );
         }
 
@@ -292,7 +293,7 @@ impl<D: DirectoryHandle> Victor<D> {
         embeddings.collect()
     }
 
-    async fn get_embedding_size(file: Vec<u8>) -> u32 {
+    fn get_embedding_size(file: Vec<u8>) -> u32 {
         // Read the embedding size from the header.
         let header_size = std::mem::size_of::<u32>(); // Assuming your header is u32
 
@@ -356,20 +357,28 @@ impl<D: DirectoryHandle> Victor<D> {
 
         writable.seek(file_handle.size().await?).await?;
 
+        let embedding_serialized =
+            bincode::serialize(&embedding).expect("Failed to serialize embedding");
+
         if file_handle.size().await? == 0 {
-            let len_as_u32: u32 = bincode::serialize(&embedding)
-                .expect("Failed to serialize embedding")
-                .len() as u32;
+            let len_as_u32: u32 = embedding_serialized.len() as u32;
 
             let serialized_size =
                 bincode::serialize(&len_as_u32).expect("Failed to serialize size");
 
             writable.write_at_cursor_pos(serialized_size).await?;
+        } else {
+            let embedding_size = Self::get_embedding_size(file_handle.read().await?);
+            if embedding_serialized.len() as u32 != embedding_size {
+                panic!(
+                    "Embedding size mismatch: expected {} but got {}",
+                    embedding_size,
+                    embedding_serialized.len()
+                );
+            }
         }
 
-        let embedding = bincode::serialize(&embedding).expect("Failed to serialize embedding");
-
-        writable.write_at_cursor_pos(embedding).await?;
+        writable.write_at_cursor_pos(embedding_serialized).await?;
         writable.close().await?;
 
         if file_handle.size().await? > 100000 && !is_projected {

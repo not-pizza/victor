@@ -110,32 +110,32 @@ mod tests {
 
         // 1. Generate a vector of 1024 random numbers between -1000 and 1000
         let distribution = Uniform::from(-1000.0f32..=1000.0f32);
-        let numbers: Vec<f32> = (0..1024).map(|_| distribution.sample(&mut rng)).collect();
+        let vector: Vec<f32> = (0..1024).map(|_| distribution.sample(&mut rng)).collect();
 
         // 2. Normalize the vector
-        let magnitude = numbers.iter().map(|&num| num * num).sum::<f32>().sqrt();
-        let normalized: Vec<f32> = numbers.iter().map(|&num| num / magnitude).collect();
+        let magnitude = vector.iter().map(|&num| num * num).sum::<f32>().sqrt();
+        let vector: Vec<f32> = vector.iter().map(|&num| num / magnitude).collect();
 
         // 3. Pack it
-        let packed = PackedVector::pack(&normalized);
+        let packed = PackedVector::pack(&vector);
 
         // 4. Unpack it
         let unpacked = packed.unpack();
 
         // 5. Measure the max loss in accuracy
-        let max_loss = normalized
+        let max_loss = vector
             .iter()
             .zip(unpacked.iter())
             .map(|(original, unpacked)| (original - unpacked).abs())
             .fold(f32::NEG_INFINITY, f32::max);
 
         // 6. Measure the average change
-        let total_loss: f32 = normalized
+        let total_loss: f32 = vector
             .iter()
             .zip(unpacked.iter())
             .map(|(original, unpacked)| (original - unpacked).abs())
             .sum();
-        let avg_loss = total_loss / normalized.len() as f32;
+        let avg_loss = total_loss / vector.len() as f32;
 
         // For a vector database, a small loss in accuracy is acceptable in exchange for a big
         // increase in storage efficiency. We'll set an arbitrary threshold here, say 0.0005.
@@ -146,5 +146,25 @@ mod tests {
         let repacked = PackedVector::pack(&unpacked);
         let repacked_unpacked = repacked.unpack();
         assert_eq!(unpacked, repacked_unpacked);
+    }
+
+    #[test]
+    fn packed_size() {
+        let seed = [0; 32];
+        let mut rng = StdRng::from_seed(seed);
+
+        // 1. Generate a vector of 1024 random numbers between -1000 and 1000
+        let distribution = Uniform::from(-1000.0f32..=1000.0f32);
+        let vector: Vec<f32> = (0..1536).map(|_| distribution.sample(&mut rng)).collect();
+
+        // 2. Normalize the vector
+        let magnitude = vector.iter().map(|&num| num * num).sum::<f32>().sqrt();
+        let vector: Vec<f32> = vector.iter().map(|&num| num / magnitude).collect();
+
+        // 3. Pack it
+        let packed_vector = PackedVector::pack(&vector);
+        let packed_size = bincode::serialize(&packed_vector).unwrap().len();
+
+        assert_eq!(packed_size, 1552);
     }
 }

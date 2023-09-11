@@ -103,12 +103,17 @@ impl filesystem::WritableFileStream for WritableFileStream {
     type Error = String;
 
     async fn write_at_cursor_pos(&mut self, data: Vec<u8>) -> Result<(), Self::Error> {
+        let data_len = data.len();
+
         let mut stream = self.stream.borrow_mut();
         *stream = stream[0..self.cursor_pos]
             .iter()
             .cloned()
             .chain(data)
             .collect::<Vec<u8>>();
+
+        self.cursor_pos += data_len;
+        
         Ok(())
     }
 

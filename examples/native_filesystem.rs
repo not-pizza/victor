@@ -11,15 +11,15 @@ async fn main() {
 
     victor
         .write(
-            vec![1.0, 0.0, 0.0],
             "Test Vector 1",
+            vec![1.0, 0.0, 0.0],
             vec!["Test".to_string()],
         )
         .await;
     victor
         .write(
-            vec![0.0, 1.0, 0.0],
             "Test Vector 2",
+            vec![0.0, 1.0, 0.0],
             vec!["Test".to_string()],
         )
         .await;

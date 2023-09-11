@@ -46,7 +46,7 @@ pub(crate) fn euclidean(v1: &[f32], v2: &[f32]) -> Result<f32, String> {
 fn cosine_test() {
     let v1 = vec![1.0, 2.0, 3.0];
     let v2 = vec![3.0, 2.0, 1.0];
-    let result = cosine(v1, v2).unwrap();
+    let result = cosine(&v1, &v2).unwrap();
     let expected = 0.7142857;
     assert!(
         (result - expected).abs() < 0.001,
@@ -60,7 +60,7 @@ fn cosine_test() {
 fn cosine_test_same() {
     let v1 = vec![1.0, 2.0, 3.0];
     let v2 = vec![1.0, 2.0, 3.0];
-    let result = cosine(v1, v2).unwrap();
+    let result = cosine(&v1, &v2).unwrap();
     let expected = 1.0;
     assert!(
         (result - expected).abs() < 0.001,
@@ -74,7 +74,7 @@ fn cosine_test_same() {
 fn cosine_test_opposite() {
     let v1 = vec![1.0, 2.0, 3.0];
     let v2 = vec![-1.0, -2.0, -3.0];
-    let result = cosine(v1, v2).unwrap();
+    let result = cosine(&v1, &v2).unwrap();
     let expected = -1.0;
     assert!(
         (result - expected).abs() < 0.001,
