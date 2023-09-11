@@ -23,3 +23,14 @@ Web-optimized vector database (written in Rust).
    `npm i`
 
 3.
+
+## Architecture
+
+Relevant code at `src/packed_vector.rs`.
+
+![Packed vector storage explanation](./assets/packed_vector_storage.png)
+  
+---
+
+![File structure explanation](assets/file_structure.png)
+
