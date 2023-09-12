@@ -12,9 +12,7 @@ Web-optimized vector database (written in Rust).
 
 ## Installation
 
-TODO: post to npm
-
-`npm install victordb`
+`npm install victor-db`
 
 ## Example
 
