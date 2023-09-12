@@ -146,7 +146,7 @@ impl<D: DirectoryHandle> Victor<D> {
     async fn project_embeddings(&mut self) {
         let prev_embeddings = self.get_all_embeddings().await;
 
-        let (eigenvectors, means) = project_to_lower_dimension(prev_embeddings.clone(), 250);
+        let (eigenvectors, means) = project_to_lower_dimension(prev_embeddings.clone(), 500);
         let vector_projection: VectorProjection = VectorProjection {
             eigen: eigenvectors.clone(),
             means: means,
@@ -381,7 +381,7 @@ impl<D: DirectoryHandle> Victor<D> {
         writable.write_at_cursor_pos(embedding_serialized).await?;
         writable.close().await?;
 
-        if file_handle.size().await? > 100000 && !is_projected {
+        if file_handle.size().await? > 1000000 && !is_projected {
             self.project_embeddings().await;
         }
 
