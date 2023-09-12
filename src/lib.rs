@@ -1,3 +1,5 @@
+use wasm_bindgen_futures::JsFuture;
+
 mod db;
 mod decomposition;
 mod filesystem;
@@ -55,73 +57,71 @@ extern "C" {
 }
 
 #[cfg(target_arch = "wasm32")]
-/// Assumes all the embeddings are the size of `embedding`
-/// TODO: Record the embedding size somewhere so we can return an error if
-/// the sizes are wrong (as otherwise this will corrupt the entire db)
 #[wasm_bindgen]
-pub async fn write_embedding(
-    root: FileSystemDirectoryHandle,
-    content: &str,
-    embedding: &[f64],
-    tags: Option<Vec<JsValue>>,
-) {
-    utils::set_panic_hook();
-
-    let mut victor = Victor::new(filesystem::web::DirectoryHandle::from(root));
-
-    let embedding = embedding.iter().map(|x| *x as f32).collect::<Vec<_>>();
-
-    let tags = tags
-        .map(|tags| {
-            tags.into_iter()
-                .map(|x| x.as_string().unwrap())
-                .collect::<Vec<_>>()
-        })
-        .unwrap_or(vec![]);
-
-    victor.write(content, embedding, tags).await;
+pub struct Db {
+    victor: crate::db::Victor<filesystem::web::DirectoryHandle>,
 }
 
 #[cfg(target_arch = "wasm32")]
-/// Assumes all the embeddings are the size of `embedding`
 #[wasm_bindgen]
-pub async fn find_nearest_neighbor(
-    root: FileSystemDirectoryHandle,
-    embedding: &[f64],
-    tags: Option<Vec<JsValue>>,
-) -> JsValue {
-    utils::set_panic_hook();
+impl Db {
+    #[wasm_bindgen(constructor)]
+    pub async fn new() -> Self {
+        utils::set_panic_hook();
 
-    let mut victor = Victor::new(filesystem::web::DirectoryHandle::from(root));
+        let window = web_sys::window().ok_or(JsValue::NULL).unwrap();
+        let navigator = window.navigator();
+        let file_system_directory_handle = FileSystemDirectoryHandle::from(
+            JsFuture::from(navigator.storage().get_directory())
+                .await
+                .unwrap(),
+        );
 
-    let embedding = embedding.iter().map(|x| *x as f32).collect::<Vec<_>>();
+        let victor = Victor::new(file_system_directory_handle);
 
-    let tags = tags
-        .map(|tags| {
-            tags.into_iter()
-                .map(|x| x.as_string().unwrap())
-                .collect::<Vec<_>>()
-        })
-        .unwrap_or(vec![]);
-
-    let nearest = victor.find_nearest_neighbor(embedding, tags).await;
-
-    if let Some(nearest) = nearest {
-        wasm_bindgen::JsValue::from_str(&nearest.content)
-    } else {
-        wasm_bindgen::JsValue::NULL
+        Self { victor }
     }
-}
 
-#[cfg(target_arch = "wasm32")]
-/// Assumes all the embeddings are the size of `embedding`
-#[wasm_bindgen]
-pub async fn clear_db(root: FileSystemDirectoryHandle) {
-    utils::set_panic_hook();
+    pub async fn insert(&mut self, content: &str, embedding: &[f64], tags: Option<Vec<JsValue>>) {
+        let embedding = embedding.iter().map(|x| *x as f32).collect::<Vec<_>>();
 
-    let mut victor = Victor::new(filesystem::web::DirectoryHandle::from(root));
-    let result = victor.clear_db().await; // ignore the error if there is one
-    if !result.is_ok() {
-        console_warn!("Failed to clear victor data: {:?}", result);
+        let tags = tags
+            .map(|tags| {
+                tags.into_iter()
+                    .map(|x| x.as_string().unwrap())
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or(vec![]);
+
+        self.victor.write(content, embedding, tags).await;
+    }
+
+    pub async fn search(&mut self, embedding: &[f64], tags: Option<Vec<JsValue>>) -> JsValue {
+        let embedding = embedding.iter().map(|x| *x as f32).collect::<Vec<_>>();
+
+        let tags = tags
+            .map(|tags| {
+                tags.into_iter()
+                    .map(|x| x.as_string().unwrap())
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or(vec![]);
+
+        let nearest = self.victor.find_nearest_neighbor(embedding, tags).await;
+
+        if let Some(nearest) = nearest {
+            wasm_bindgen::JsValue::from_str(&nearest.content)
+        } else {
+            wasm_bindgen::JsValue::NULL
+        }
+    }
+
+    pub async fn clear(&mut self) {
+        utils::set_panic_hook();
+
+        let result = self.victor.clear_db().await; // ignore the error if there is one
+        if !result.is_ok() {
+            console_warn!("Failed to clear victor data: {:?}", result);
+        }
     }
 }

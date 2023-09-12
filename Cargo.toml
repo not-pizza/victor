@@ -38,6 +38,9 @@ web-sys = { version = "0.3.64", features = [
     "FileSystemGetFileOptions",
     "FileSystemCreateWritableOptions",
     "Blob",
+    "Window",
+    "Navigator",
+    "StorageManager"
 ] }
 wasm-bindgen-futures = "0.4.37"
 js-sys = "0.3"

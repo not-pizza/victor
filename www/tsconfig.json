@@ -3,10 +3,10 @@
     "outDir": "./dist/",
     "sourceMap": true,
     "noImplicitAny": true,
-    "target": "es6",
+    "target": "es2017",
     "jsx": "react",
     "allowJs": true,
-    "module": "ESNext",
+    "module": "es2022",
     "moduleResolution": "node",
     "esModuleInterop": true,
     "resolveJsonModule": true
