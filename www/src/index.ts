@@ -1,4 +1,4 @@
-import * as victor from 'victor';
+import { Db } from 'victor';
 import flatland from './flatland.json';
 import { EmbeddingResponse } from '../types/openai';
 
@@ -14,7 +14,10 @@ type Failure = {
 
 type Result<T> = Success<T> | Failure;
 
-async function fetchEmbedding(embedInput: string, openaiApiKey: string): Promise<Result<EmbeddingResponse>> {
+async function fetchEmbedding(
+  embedInput: string,
+  openaiApiKey: string,
+): Promise<Result<EmbeddingResponse>> {
   try {
     const response = await fetch('https://api.openai.com/v1/embeddings', {
       method: 'POST',
@@ -40,39 +43,52 @@ async function fetchEmbedding(embedInput: string, openaiApiKey: string): Promise
   }
 }
 
-async function getRootDirectory(): Promise<FileSystemDirectoryHandle> {
-  return await navigator.storage.getDirectory();
-}
-
-async function storeEmbedding(embedInput: string, openaiApiKey: string, tags: string[]) {
+async function storeEmbedding(
+  embedInput: string,
+  openaiApiKey: string,
+  tags: string[],
+) {
   const embedResponse = await fetchEmbedding(embedInput, openaiApiKey);
 
   if (!embedResponse.success) {
     return;
   }
 
-  const root = await getRootDirectory();
   const embedding = new Float64Array(embedResponse.data.data[0].embedding);
-  await victor.write_embedding(root, embedInput, embedding, tags);
+  const db = await new Db();
+  await db.insert(embedInput, embedding, tags);
 }
 
-async function searchEmbedding(embedInput: string, openaiApiKey: string, tags: string[]) {
+async function searchEmbedding(
+  embedInput: string,
+  openaiApiKey: string,
+  tags: string[],
+) {
   const embedResponse = await fetchEmbedding(embedInput, openaiApiKey);
 
   if (!embedResponse.success) {
     return;
   }
 
-  const root = await getRootDirectory();
   const embedding = new Float64Array(embedResponse.data.data[0].embedding);
-  const result = await victor.find_nearest_neighbor(root, embedding, tags);
+  const db = await new Db();
+  const result = await db.search(embedding, tags);
   console.log(result);
 }
 
-function getFormValues(): { openaiApiKey: string; inputText: string; tags: string[] } {
-  const openaiApiKey = (document.getElementById('openai') as HTMLInputElement).value;
-  const inputText = (document.getElementById('inputText') as HTMLInputElement).value;
-  const tags = (document.getElementById('tags') as HTMLInputElement).value.split(',').map(tag => tag.trim()).filter(tag => tag !== '');
+function getFormValues(): {
+  openaiApiKey: string;
+  inputText: string;
+  tags: string[];
+} {
+  const openaiApiKey = (document.getElementById('openai') as HTMLInputElement)
+    .value;
+  const inputText = (document.getElementById('inputText') as HTMLInputElement)
+    .value;
+  const tags = (document.getElementById('tags') as HTMLInputElement).value
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter((tag) => tag !== '');
 
   if (openaiApiKey) {
     localStorage.setItem('openaiApiKey', openaiApiKey);
@@ -97,14 +113,12 @@ async function handleSearch() {
   }
 }
 
-async function storeFlatlandEmbedding(embedding: number[], embeddingText: string) {
-  const root = await navigator.storage.getDirectory();
-  await victor.write_embedding(
-    root,
-    embeddingText,
-    new Float64Array(embedding),
-    ['flatland'],
-  );
+async function storeFlatlandEmbedding(
+  embedding: number[],
+  embeddingText: string,
+) {
+  const db = await new Db();
+  await db.insert(embeddingText, new Float64Array(embedding), ['flatland']);
 }
 
 async function embedAllFlatlands() {
@@ -119,7 +133,6 @@ async function embedAllFlatlands() {
   }
 }
 
-
 function restoreOpenaiApiKey() {
   console.log('restoring openai api key');
   const openaiApiKey = localStorage.getItem('openaiApiKey');
@@ -133,14 +146,11 @@ restoreOpenaiApiKey();
 
 async function clearDatabase() {
   console.log('clearing db');
-  const root = await navigator.storage.getDirectory();
-  console.log('root: ', root);
-  if (root) {
-    try {
-      await victor.clear_db(root);
-    } catch (e) {
-      console.log('could not clear:', e);
-    }
+  try {
+    const db = await new Db();
+    await db.clear();
+  } catch (e) {
+    console.log('could not clear:', e);
   }
 }
 
