@@ -64,3 +64,9 @@ Relevant code at `src/packed_vector.rs`.
 ---
 
 ![File structure explanation](assets/file_structure.png)
+
+## Us
+
+[Sam Hall](https://twitter.com/Shmall27)
+
+[Andre Popovitch](https://twitter.com/ChadNauseam)
