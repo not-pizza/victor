@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use victor::native::Db;
+use victor_db::native::Db;
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
