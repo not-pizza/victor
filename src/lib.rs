@@ -96,7 +96,12 @@ impl Db {
         self.victor.write(content, embedding, tags).await;
     }
 
-    pub async fn search(&mut self, embedding: &[f64], tags: Option<Vec<JsValue>>) -> JsValue {
+    pub async fn search(
+        &mut self,
+        embedding: &[f64],
+        tags: Option<Vec<JsValue>>,
+        top_n: Option<f64>,
+    ) -> JsValue {
         let embedding = embedding.iter().map(|x| *x as f32).collect::<Vec<_>>();
 
         let tags = tags
@@ -107,13 +112,12 @@ impl Db {
             })
             .unwrap_or(vec![]);
 
-        let nearest = self.victor.find_nearest_neighbor(embedding, tags).await;
+        let nearest_neighbors = self
+            .victor
+            .find_nearest_neighbors(embedding, tags, top_n.unwrap_or(10.0) as u32)
+            .await;
 
-        if let Some(nearest) = nearest {
-            wasm_bindgen::JsValue::from_str(&nearest.content)
-        } else {
-            wasm_bindgen::JsValue::NULL
-        }
+        serde_wasm_bindgen::to_value(&nearest_neighbors).unwrap()
     }
 
     pub async fn clear(&mut self) {

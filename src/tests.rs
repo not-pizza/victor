@@ -9,10 +9,12 @@ async fn store_and_retrieve() {
     victor.write("hello", embedding.clone(), vec![]).await;
 
     let result = victor
-        .find_nearest_neighbor(embedding, vec![])
+        .find_nearest_neighbors(embedding, vec![], 1)
         .await
+        .first()
         .unwrap()
-        .content;
+        .content
+        .clone();
 
     assert_eq!(result, "hello".to_string());
 }
@@ -29,19 +31,23 @@ async fn store_two_and_retrieve() {
 
     {
         let result = victor
-            .find_nearest_neighbor(embedding_1, vec![])
+            .find_nearest_neighbors(embedding_1, vec![], 1)
             .await
+            .first()
             .unwrap()
-            .content;
+            .content
+            .clone();
 
         assert_eq!(result, "hello".to_string());
     }
     {
         let result = victor
-            .find_nearest_neighbor(embedding_2, vec![])
+            .find_nearest_neighbors(embedding_2, vec![], 1)
             .await
+            .first()
             .unwrap()
-            .content;
+            .content
+            .clone();
 
         assert_eq!(result, "goodbye".to_string());
     }
@@ -63,47 +69,54 @@ async fn store_two_and_retrieve_with_tags() {
 
     {
         let result = victor
-            .find_nearest_neighbor(embedding_1.clone(), vec![])
+            .find_nearest_neighbors(embedding_1.clone(), vec![], 1)
             .await
+            .first()
             .unwrap()
-            .content;
+            .content
+            .clone();
 
         assert_eq!(result, "hello".to_string());
     }
     {
         let result = victor
-            .find_nearest_neighbor(embedding_2.clone(), vec![])
+            .find_nearest_neighbors(embedding_2.clone(), vec![], 1)
             .await
+            .first()
             .unwrap()
-            .content;
+            .content
+            .clone();
 
         assert_eq!(result, "goodbye".to_string());
     }
 
     {
         let result = victor
-            .find_nearest_neighbor(embedding_1.clone(), vec!["goodbyes".to_string()])
+            .find_nearest_neighbors(embedding_1.clone(), vec!["goodbyes".to_string()], 1)
             .await
+            .first()
             .unwrap()
-            .content;
+            .content
+            .clone();
 
         assert_eq!(result, "goodbye".to_string());
     }
     {
         let result = victor
-            .find_nearest_neighbor(embedding_2, vec!["greetings".to_string()])
+            .find_nearest_neighbors(embedding_2, vec!["greetings".to_string()], 1)
             .await
+            .first()
             .unwrap()
-            .content;
+            .clone();
 
-        assert_eq!(result, "hello".to_string());
+        assert_eq!(result.content, "hello");
     }
     {
         let result = victor
-            .find_nearest_neighbor(embedding_1, vec!["mysterious".to_string()])
+            .find_nearest_neighbors(embedding_1, vec!["mysterious".to_string()], 1)
             .await;
 
-        assert_eq!(result, None);
+        assert_eq!(result.first(), None);
     }
 }
 

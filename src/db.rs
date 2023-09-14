@@ -1,4 +1,5 @@
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::cmp::Reverse;
+use std::collections::{BTreeSet, BinaryHeap, HashMap, HashSet};
 
 use nalgebra::DMatrix;
 use serde::{Deserialize, Serialize};
@@ -87,11 +88,13 @@ impl<D: DirectoryHandle> Victor<D> {
         self.write_content(content, id).await.unwrap();
     }
 
-    pub async fn find_nearest_neighbor(
+    pub async fn find_nearest_neighbors(
         &mut self,
         mut vector: Vec<f32>,
         with_tags: Vec<String>,
-    ) -> Option<Content> {
+        top_n: u32,
+    ) -> Vec<NearestNeighborsResult> {
+        let top_n = top_n as usize;
         let with_tags = with_tags.into_iter().collect::<BTreeSet<_>>();
         let file_handles = Index::get_matching_db_files(&mut self.root, with_tags)
             .await
@@ -103,13 +106,11 @@ impl<D: DirectoryHandle> Victor<D> {
             .await
             .is_ok();
 
-        let mut nearest_similarity: Option<f32> = None;
-        let mut nearest_embedding: Option<Embedding> = None;
-
         if is_projected {
             vector = self.project_single_vector(vector).await;
         }
 
+        let mut nearest_neighbors = BinaryHeap::with_capacity(top_n);
         for file_handle in file_handles {
             let file = file_handle.read().await.unwrap();
             let embeddings = self.get_embeddings_by_file(file).await;
@@ -121,23 +122,33 @@ impl<D: DirectoryHandle> Victor<D> {
                 } else {
                     similarity::cosine(&potential_match.vector, &vector).unwrap()
                 };
-                if nearest_similarity.is_none() || sim > nearest_similarity.unwrap() {
-                    nearest_similarity = Some(sim);
-                    nearest_embedding = Some(potential_match.clone());
+
+                if nearest_neighbors.len() < top_n {
+                    let result = NearestNeighborsResult {
+                        similarity: sim,
+                        embedding: potential_match.clone(),
+                        content: self.get_content(potential_match.id).await,
+                    };
+                    nearest_neighbors.push(Reverse(result));
+                } else if sim > nearest_neighbors.peek().unwrap().0.similarity {
+                    let result = NearestNeighborsResult {
+                        similarity: sim,
+                        embedding: potential_match.clone(),
+                        content: self.get_content(potential_match.id).await,
+                    };
+                    nearest_neighbors.pop();
+                    nearest_neighbors.push(Reverse(result));
                 }
             }
         }
 
-        if let Some(nearest) = nearest_embedding {
-            let content = self.get_content(nearest.id).await;
-
-            Some(Content {
-                id: nearest.id,
-                content,
-            })
-        } else {
-            None
-        }
+        let mut nearest = nearest_neighbors
+            .into_iter()
+            .map(|r| r.0)
+            .collect::<Vec<_>>();
+        nearest.sort();
+        nearest.reverse();
+        nearest
     }
 
     // utils
@@ -542,5 +553,33 @@ impl Index {
             .into_iter()
             .map(Self::filename_for_tags)
             .collect())
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct NearestNeighborsResult {
+    pub similarity: f32,
+    pub embedding: Embedding,
+    pub content: String,
+}
+
+impl PartialEq for NearestNeighborsResult {
+    fn eq(&self, other: &Self) -> bool {
+        self.similarity == other.similarity
+    }
+}
+
+impl Eq for NearestNeighborsResult {}
+
+impl PartialOrd for NearestNeighborsResult {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.similarity.partial_cmp(&other.similarity)
+    }
+}
+
+impl Ord for NearestNeighborsResult {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.partial_cmp(other)
+            .expect("could not compare, most likely a NaN is involved")
     }
 }

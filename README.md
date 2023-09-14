@@ -33,9 +33,10 @@ const embedding = new Float64Array(/* your embedding here */);
 // write to victor
 await db.insert(content, embedding, tags);
 
-// read from victor
-const result = await db.search(embedding, ["tags"]);
-assert(result == content);
+// read the 10 closest results from victor that are tagged with "tags"
+// (only 1 will be returned because we only inserted one embedding)
+const result = await db.search(embedding, ["tags"], 10);
+assert(result[0].content == content);
 
 // clear database
 await db.clear();
@@ -53,7 +54,7 @@ cargo add victor-db
 
 #### Usage
 
-```ts
+```rust
 use std::path::PathBuf;
 
 use victor_db::native::Db;
@@ -78,11 +79,15 @@ victor
     )
     .await;
 
+// read the 10 closest results from victor that are tagged with "tags"
+// (only 2 will be returned because we only inserted two embeddings)
 let nearest = victor
-    .find_nearest_neighbor(vec![0.9, 0.0, 0.0], vec![])
-    .await
-    .unwrap()
-    .content;
+   .find_nearest_neighbors(vec![0.9, 0.0, 0.0], vec!["Test".to_string()], 10)
+   .await
+   .first()
+   .unwrap()
+   .content
+   .clone();
 assert_eq!(nearest, "Test Vector 1".to_string());
 ```
 

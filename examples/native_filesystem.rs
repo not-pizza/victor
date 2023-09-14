@@ -24,10 +24,14 @@ async fn main() {
         )
         .await;
 
+    // read the 10 closest results from victor that are tagged with "tags"
+    // (only 2 will be returned because we only inserted two embeddings)
     let nearest = victor
-        .find_nearest_neighbor(vec![0.9, 0.0, 0.0], vec![])
+        .find_nearest_neighbors(vec![0.9, 0.0, 0.0], vec!["Test".to_string()], 10)
         .await
+        .first()
         .unwrap()
-        .content;
+        .content
+        .clone();
     assert_eq!(nearest, "Test Vector 1".to_string());
 }
