@@ -43,6 +43,51 @@ await db.clear();
 
 See `www/` for a more complete example, including fetching embeddings from OpenAI.
 
+## Rust Example
+
+#### Installation
+
+```
+cargo add victor-db
+```
+
+#### Usage
+
+```ts
+use std::path::PathBuf;
+
+use victor_db::native::Db;
+
+let _ = std::fs::create_dir("./victor_test_data");
+let mut victor = Db::new(PathBuf::from("./victor_test_data"));
+
+victor.clear_db().await.unwrap();
+
+victor
+    .write(
+        "Test Vector 1",
+        vec![1.0, 0.0, 0.0],
+        vec!["Test".to_string()],
+    )
+    .await;
+victor
+    .write(
+        "Test Vector 2",
+        vec![0.0, 1.0, 0.0],
+        vec!["Test".to_string()],
+    )
+    .await;
+
+let nearest = victor
+    .find_nearest_neighbor(vec![0.9, 0.0, 0.0], vec![])
+    .await
+    .unwrap()
+    .content;
+assert_eq!(nearest, "Test Vector 1".to_string());
+```
+
+This example is also in the `/examples` directory. If you've cloned this repository, you can run it with `cargo run --example native_filesystem`.
+
 ## Hacking
 
 1. Victor is written in Rust, and compiled to wasm with wasm-pack.
