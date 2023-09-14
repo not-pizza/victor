@@ -32,7 +32,7 @@ pub fn embeddings_to_dmatrix(embeddings: Vec<Vec<f32>>) -> DMatrix<f32> {
     let ncols = embeddings[0].len();
 
     // Flatten all vectors into a single Vec<f32>
-    let data: Vec<f32> = embeddings.into_iter().flat_map(|e| e).collect();
+    let data: Vec<f32> = embeddings.into_iter().flatten().collect();
 
     // Convert the data into a DMatrix
     DMatrix::from_row_slice(nrows, ncols, &data)
@@ -52,9 +52,7 @@ fn compute_covariance_matrix(matrix: &DMatrix<f32>) -> DMatrix<f32> {
     let n_samples = matrix.nrows() as f32;
     let matrix_transposed = matrix.transpose();
 
-    let covariance_matrix = matrix_transposed * matrix / n_samples;
-
-    covariance_matrix
+    matrix_transposed * matrix / n_samples
 }
 
 fn compute_eigenvectors_and_eigenvalues(matrix: &DMatrix<f32>) -> (DVector<f32>, DMatrix<f32>) {

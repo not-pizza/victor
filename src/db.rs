@@ -116,12 +116,11 @@ impl<D: DirectoryHandle> Victor<D> {
 
             // find max similarity in this file
             for potential_match in &embeddings {
-                let sim;
-                if is_projected {
-                    sim = similarity::euclidean(&potential_match.vector, &vector).unwrap();
+                let sim = if is_projected {
+                    similarity::euclidean(&potential_match.vector, &vector).unwrap()
                 } else {
-                    sim = similarity::cosine(&potential_match.vector, &vector).unwrap();
-                }
+                    similarity::cosine(&potential_match.vector, &vector).unwrap()
+                };
                 if nearest_similarity.is_none() || sim > nearest_similarity.unwrap() {
                     nearest_similarity = Some(sim);
                     nearest_embedding = Some(potential_match.clone());
@@ -147,9 +146,9 @@ impl<D: DirectoryHandle> Victor<D> {
         let prev_embeddings = self.get_all_embeddings().await;
 
         let (eigenvectors, means) = project_to_lower_dimension(prev_embeddings.clone(), 500);
-        let vector_projection: VectorProjection = VectorProjection {
+        let vector_projection = VectorProjection {
             eigen: eigenvectors.clone(),
-            means: means,
+            means,
         };
 
         self.write_projection(vector_projection.clone()).await;
@@ -298,10 +297,8 @@ impl<D: DirectoryHandle> Victor<D> {
         let header_size = std::mem::size_of::<u32>(); // Assuming your header is u32
 
         let embedding_size_bytes = &file[0..header_size];
-        let embedding_size = bincode::deserialize::<u32>(embedding_size_bytes)
-            .expect("Failed to deserialize header");
 
-        embedding_size
+        bincode::deserialize::<u32>(embedding_size_bytes).expect("Failed to deserialize header")
     }
 
     async fn project_single_vector(&mut self, vector: Vec<f32>) -> Vec<f32> {
