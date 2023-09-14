@@ -3,6 +3,11 @@ name = "victor-db"
 version = "0.1.1"
 authors = ["Sam Hall <s@muel.email", "Andre Popovitch <andre@popovit.ch>"]
 edition = "2021"
+license-file = "LICENSE.md"
+description = "A browser-optimized vector database"
+repository = "https://github.com/not-pizza/victor/"
+readme = "README.md"
+
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -40,7 +45,7 @@ web-sys = { version = "0.3.64", features = [
     "Blob",
     "Window",
     "Navigator",
-    "StorageManager"
+    "StorageManager",
 ] }
 wasm-bindgen-futures = "0.4.37"
 js-sys = "0.3"

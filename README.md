@@ -10,11 +10,16 @@ Web-optimized vector database (written in Rust).
    1. For a vector with 1536 dimensions, our representation consumes 1.5 KB, while naively encoding with JSON would consume 20.6 KB.
 4. PCA for vector compression when storage space is low
 
-## Installation
 
-`npm install victor-db`
+## JS Example
 
-## Example
+#### Installation
+
+```
+npm install victor-db
+```
+
+#### Usage
 
 ```ts
 import { Db } from "victor";
