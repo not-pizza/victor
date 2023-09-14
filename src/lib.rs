@@ -1,5 +1,3 @@
-use wasm_bindgen_futures::JsFuture;
-
 mod db;
 mod decomposition;
 mod filesystem;
@@ -11,7 +9,9 @@ mod utils;
 mod tests;
 
 #[cfg(target_arch = "wasm32")]
-use {wasm_bindgen::prelude::*, web_sys::FileSystemDirectoryHandle};
+use {
+    wasm_bindgen::prelude::*, wasm_bindgen_futures::JsFuture, web_sys::FileSystemDirectoryHandle,
+};
 
 #[cfg(target_arch = "wasm32")]
 type Victor = crate::db::Victor<filesystem::web::DirectoryHandle>;
