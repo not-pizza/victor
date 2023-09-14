@@ -1,0 +1,42 @@
+on:
+  push:
+    tags:        
+      - '*'
+  workflow_dispatch:
+
+name: Publish to crates.io and npm
+
+jobs:
+  publish-crates:
+    name: Publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - run: cargo publish --token ${VICTOR_CRATES_TOKEN}
+        env:
+          VICTOR_CRATES_TOKEN: ${{ secrets.VICTOR_CRATES_TOKEN }}
+
+  publish-npm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      # Setup .npmrc file to publish to npm
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+      - run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      - run: wasm-pack build
+      - run: wasm-pack pack
+      - run: npm publish pkg/
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.VICTOR_NPM_TOKEN }}
