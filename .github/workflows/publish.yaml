@@ -8,7 +8,7 @@ name: Publish to crates.io and npm
 
 jobs:
   publish-crates:
-    name: Publish
+    name: Publish to crates.io
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -26,6 +26,7 @@ jobs:
           VICTOR_CRATES_TOKEN: ${{ secrets.VICTOR_CRATES_TOKEN }}
 
   publish-npm:
+    name: Publish to npm
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
