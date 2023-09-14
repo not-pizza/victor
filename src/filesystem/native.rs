@@ -38,7 +38,7 @@ impl filesystem::DirectoryHandle for DirectoryHandle {
     type FileHandleT = FileHandle;
 
     async fn get_file_handle_with_options(
-        &mut self,
+        &self,
         name: &str,
         options: &filesystem::GetFileHandleOptions,
     ) -> Result<Self::FileHandleT, Self::Error> {

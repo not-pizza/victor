@@ -89,14 +89,14 @@ impl<D: DirectoryHandle> Victor<D> {
     }
 
     pub async fn find_nearest_neighbors(
-        &mut self,
+        &self,
         mut vector: Vec<f32>,
         with_tags: Vec<String>,
         top_n: u32,
     ) -> Vec<NearestNeighborsResult> {
         let top_n = top_n as usize;
         let with_tags = with_tags.into_iter().collect::<BTreeSet<_>>();
-        let file_handles = Index::get_matching_db_files(&mut self.root, with_tags)
+        let file_handles = Index::get_matching_db_files(&self.root, with_tags)
             .await
             .unwrap();
 
@@ -169,7 +169,7 @@ impl<D: DirectoryHandle> Victor<D> {
 
     async fn update_all_embeddings(&mut self, vector_projection: VectorProjection) {
         let file_handles = Index::get_matching_db_files(
-            &mut self.root,
+            &self.root,
             Vec::new().into_iter().collect::<BTreeSet<_>>(),
         )
         .await
@@ -260,9 +260,9 @@ impl<D: DirectoryHandle> Victor<D> {
         writable.close().await.unwrap();
     }
 
-    async fn get_all_embeddings(&mut self) -> Vec<Embedding> {
+    async fn get_all_embeddings(&self) -> Vec<Embedding> {
         let file_handles = Index::get_matching_db_files(
-            &mut self.root,
+            &self.root,
             Vec::new().into_iter().collect::<BTreeSet<_>>(),
         )
         .await
@@ -279,7 +279,7 @@ impl<D: DirectoryHandle> Victor<D> {
         prev_embeddings
     }
 
-    async fn get_embeddings_by_file(&mut self, file: Vec<u8>) -> Vec<Embedding> {
+    async fn get_embeddings_by_file(&self, file: Vec<u8>) -> Vec<Embedding> {
         let header_size = std::mem::size_of::<u32>();
 
         let embedding_size: u32 = Self::get_embedding_size(file.clone());
@@ -312,7 +312,7 @@ impl<D: DirectoryHandle> Victor<D> {
         bincode::deserialize::<u32>(embedding_size_bytes).expect("Failed to deserialize header")
     }
 
-    async fn project_single_vector(&mut self, vector: Vec<f32>) -> Vec<f32> {
+    async fn project_single_vector(&self, vector: Vec<f32>) -> Vec<f32> {
         let eigen_file_handle = self
             .root
             .get_file_handle_with_options("eigen.bin", &GetFileHandleOptions { create: true })
@@ -426,7 +426,7 @@ impl<D: DirectoryHandle> Victor<D> {
         Ok(())
     }
 
-    async fn get_content(&mut self, id: Uuid) -> String {
+    async fn get_content(&self, id: Uuid) -> String {
         let content_file_handle = self
             .root
             .get_file_handle_with_options("content.bin", &GetFileHandleOptions { create: true })
@@ -464,7 +464,7 @@ impl<D: DirectoryHandle> Victor<D> {
 }
 
 impl Index {
-    async fn load<D: DirectoryHandle>(root: &mut D) -> Result<(D::FileHandleT, Self), D::Error> {
+    async fn load<D: DirectoryHandle>(root: &D) -> Result<(D::FileHandleT, Self), D::Error> {
         let file_handle = root
             .get_file_handle_with_options("index.bin", &GetFileHandleOptions { create: true })
             .await?;
@@ -488,7 +488,7 @@ impl Index {
     }
 
     async fn file_handle_for_tag<D: DirectoryHandle>(
-        root: &mut D,
+        root: &D,
         tags: BTreeSet<String>,
     ) -> Result<D::FileHandleT, D::Error> {
         // Get the filename by just hashing the tags
@@ -523,7 +523,7 @@ impl Index {
     }
 
     async fn get_matching_db_files<D: DirectoryHandle>(
-        root: &mut D,
+        root: &D,
         tags: BTreeSet<String>,
     ) -> Result<Vec<D::FileHandleT>, D::Error> {
         let (_, index) = Self::load(root).await?;

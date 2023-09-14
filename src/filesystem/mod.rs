@@ -24,7 +24,7 @@ pub trait DirectoryHandle: Debug {
     type FileHandleT: FileHandle<Error = Self::Error>;
 
     async fn get_file_handle_with_options(
-        &mut self,
+        &self,
         name: &str,
         options: &GetFileHandleOptions,
     ) -> Result<Self::FileHandleT, Self::Error>;
