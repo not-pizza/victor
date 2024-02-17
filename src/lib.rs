@@ -3,6 +3,7 @@ use wasm_bindgen_futures::JsFuture;
 mod db;
 mod decomposition;
 mod filesystem;
+mod gpu;
 mod packed_vector;
 mod similarity;
 mod utils;
@@ -68,6 +69,8 @@ impl Db {
     #[wasm_bindgen(constructor)]
     pub async fn new() -> Self {
         utils::set_panic_hook();
+
+        gpu::setup_global_wgpu().await;
 
         let window = web_sys::window().ok_or(JsValue::NULL).unwrap();
         let navigator = window.navigator();

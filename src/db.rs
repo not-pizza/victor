@@ -15,7 +15,7 @@ use crate::{
         CreateWritableOptions, DirectoryHandle, FileHandle, GetFileHandleOptions,
         WritableFileStream,
     },
-    similarity,
+    gpu, similarity,
 };
 
 pub struct Victor<D> {
@@ -193,6 +193,16 @@ impl<D: DirectoryHandle> Victor<D> {
                     vector: projected_vectors[index].clone(),
                 })
                 .collect();
+
+            gpu::GLOBAL_WGPU.with(|g| {
+                if let Some(g) = &*g.borrow() {
+                    let device = &g.device;
+                    let queue = &g.queue;
+                    let pipeline = &g.pipeline;
+
+                    gpu::load_embeddings_gpu(device, embeddings);
+                }
+            });
 
             let len_as_u32 = bincode::serialize(&new_embeddings[0])
                 .expect("Failed to serialize embeddings")
@@ -381,7 +391,7 @@ impl<D: DirectoryHandle> Victor<D> {
         writable.write_at_cursor_pos(embedding_serialized).await?;
         writable.close().await?;
 
-        if file_handle.size().await? > 1000000 && !is_projected {
+        if file_handle.size().await? > 1000 && !is_projected {
             self.project_embeddings().await;
         }
 
