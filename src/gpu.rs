@@ -3,8 +3,6 @@ use std::cell::RefCell;
 use std::sync::atomic::{AtomicBool, Ordering};
 use wgpu::util::DeviceExt;
 
-use crate::db::Embedding;
-
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 pub struct Uniforms {
@@ -17,6 +15,8 @@ pub struct GlobalWgpu {
     pub pipeline: Option<wgpu::ComputePipeline>,
     pub bind_group: Option<wgpu::BindGroup>,
     pub embeddings_buffer: Option<wgpu::Buffer>,
+    pub search_buffer: Option<wgpu::Buffer>,
+    pub result_buffer: Option<wgpu::Buffer>,
 }
 
 thread_local! {
@@ -58,12 +58,14 @@ async fn init_wgpu() -> GlobalWgpu {
         pipeline: None,
         bind_group: None,
         embeddings_buffer: None,
+        search_buffer: None,
+        result_buffer: None,
     }
 }
 
 pub fn init_pipeline(flattened_embeddings: &mut Vec<f32>, uniforms: Uniforms) -> () {
     // over-allocate the size of the buffer by 2x so we have room for future embeddings
-    let total_cap: usize = flattened_embeddings.len() * std::mem::size_of::<f32>() * 2;
+    let total_cap: usize = flattened_embeddings.len() * 2;
 
     flattened_embeddings.resize(total_cap, 0.0);
     GLOBAL_WGPU.with(|g| {
@@ -73,6 +75,20 @@ pub fn init_pipeline(flattened_embeddings: &mut Vec<f32>, uniforms: Uniforms) ->
                 label: Some("Embeddings Buffer"),
                 contents: bytemuck::cast_slice(&flattened_embeddings),
                 usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            });
+
+            let search_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("Search Buffer"),
+                size: 1024,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+                mapped_at_creation: false,
+            });
+
+            let result_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("Result Buffer"),
+                size: 1024,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
             });
 
             let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -89,7 +105,7 @@ pub fn init_pipeline(flattened_embeddings: &mut Vec<f32>, uniforms: Uniforms) ->
                             binding: 0,
                             visibility: wgpu::ShaderStages::COMPUTE,
                             ty: wgpu::BindingType::Buffer {
-                                ty: wgpu::BufferBindingType::Uniform,
+                                ty: wgpu::BufferBindingType::Storage { read_only: true },
                                 has_dynamic_offset: false,
                                 min_binding_size: None,
                             },
@@ -105,6 +121,26 @@ pub fn init_pipeline(flattened_embeddings: &mut Vec<f32>, uniforms: Uniforms) ->
                             },
                             count: None,
                         },
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 2,
+                            visibility: wgpu::ShaderStages::COMPUTE,
+                            ty: wgpu::BindingType::Buffer {
+                                ty: wgpu::BufferBindingType::Storage { read_only: false },
+                                has_dynamic_offset: false,
+                                min_binding_size: None,
+                            },
+                            count: None,
+                        },
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 3,
+                            visibility: wgpu::ShaderStages::COMPUTE,
+                            ty: wgpu::BindingType::Buffer {
+                                ty: wgpu::BufferBindingType::Uniform,
+                                has_dynamic_offset: false,
+                                min_binding_size: None,
+                            },
+                            count: None,
+                        },
                     ],
                 });
 
@@ -114,11 +150,19 @@ pub fn init_pipeline(flattened_embeddings: &mut Vec<f32>, uniforms: Uniforms) ->
                 entries: &[
                     wgpu::BindGroupEntry {
                         binding: 0,
-                        resource: uniform_buffer.as_entire_binding(),
+                        resource: embeddings_buffer.as_entire_binding(),
                     },
                     wgpu::BindGroupEntry {
                         binding: 1,
-                        resource: embeddings_buffer.as_entire_binding(),
+                        resource: search_buffer.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: result_buffer.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 3,
+                        resource: uniform_buffer.as_entire_binding(),
                     },
                 ],
             });
@@ -180,4 +224,39 @@ pub(crate) fn load_embeddings_gpu(flattened_embeddings: &mut Vec<f32>) -> () {
             }
         }
     });
+}
+
+pub(crate) fn lookup_embeddings_gpu() -> () {
+    if PIPELINE_INITIALIZED.load(Ordering::SeqCst) {
+        GLOBAL_WGPU.with(|g| {
+            if let Some(g) = &*g.borrow() {
+                let device = &g.device;
+                let queue = &g.queue;
+                let pipeline = &g
+                    .pipeline
+                    .as_ref()
+                    .expect("Compute pipeline not initialized");
+                let bind_group = &g.bind_group.as_ref().expect("Bind group not initialized");
+
+                let mut command_encoder =
+                    device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                        label: Some("Compute Command Encoder"),
+                    });
+
+                {
+                    let mut compute_pass =
+                        command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+                            label: Some("Compute Pass"),
+                            timestamp_writes: None,
+                        });
+
+                    compute_pass.set_pipeline(pipeline);
+                    compute_pass.set_bind_group(0, bind_group, &[]);
+                    compute_pass.dispatch_workgroups(1, 1, 1); // Adjust based on your needs
+                }
+
+                queue.submit(Some(command_encoder.finish()));
+            }
+        })
+    }
 }

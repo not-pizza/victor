@@ -11,6 +11,7 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::decomposition::{center_data, embeddings_to_dmatrix, project_to_lower_dimension};
 
+use crate::gpu::GLOBAL_WGPU;
 use crate::{
     filesystem::{
         CreateWritableOptions, DirectoryHandle, FileHandle, GetFileHandleOptions,
@@ -110,6 +111,8 @@ impl<D: DirectoryHandle> Victor<D> {
         if is_projected {
             vector = self.project_single_vector(vector).await;
         }
+
+        gpu::lookup_embeddings_gpu();
 
         for file_handle in file_handles {
             let file = file_handle.read().await.unwrap();
@@ -400,7 +403,8 @@ impl<D: DirectoryHandle> Victor<D> {
         writable.write_at_cursor_pos(embedding_serialized).await?;
         writable.close().await?;
 
-        if file_handle.size().await? > 1000 && !is_projected {
+        if file_handle.size().await? > 10000 && !is_projected {
+            console_log!("Projecting embeddings");
             self.project_embeddings().await;
         }
 
