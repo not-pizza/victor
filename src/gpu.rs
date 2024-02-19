@@ -7,22 +7,24 @@ use crate::db::Embedding;
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
-struct Uniforms {
-    embedding_size: u32,
-    num_embeddings: u32,
+pub struct Uniforms {
+    pub embedding_size: u32,
+    pub num_embeddings: u32,
 }
 pub struct GlobalWgpu {
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
     pub pipeline: Option<wgpu::ComputePipeline>,
+    pub bind_group: Option<wgpu::BindGroup>,
+    pub embeddings_buffer: Option<wgpu::Buffer>,
 }
 
 thread_local! {
     pub static GLOBAL_WGPU: RefCell<Option<GlobalWgpu>> = RefCell::new(None);
 }
 
-static DEVICE_INITIALIZED: AtomicBool = AtomicBool::new(false);
-static PIPELINE_INITIALIZED: AtomicBool = AtomicBool::new(false);
+pub static DEVICE_INITIALIZED: AtomicBool = AtomicBool::new(false);
+pub static PIPELINE_INITIALIZED: AtomicBool = AtomicBool::new(false);
 
 async fn init_wgpu() -> GlobalWgpu {
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
@@ -54,86 +56,98 @@ async fn init_wgpu() -> GlobalWgpu {
         device,
         queue,
         pipeline: None,
+        bind_group: None,
+        embeddings_buffer: None,
     }
 }
 
-fn init_pipeline(device: &wgpu::Device, flattened_embeddings: &Vec<f32>, uniforms: Uniforms) -> () {
-    let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Uniform Buffer"),
-        contents: bytemuck::cast_slice(&[uniforms]),
-        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-    });
+pub fn init_pipeline(flattened_embeddings: &mut Vec<f32>, uniforms: Uniforms) -> () {
+    // over-allocate the size of the buffer by 2x so we have room for future embeddings
+    let total_cap: usize = flattened_embeddings.len() * std::mem::size_of::<f32>() * 2;
 
-    let embeddings_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Embeddings Buffer"),
-        contents: bytemuck::cast_slice(&flattened_embeddings),
-        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
-    });
+    flattened_embeddings.resize(total_cap, 0.0);
+    GLOBAL_WGPU.with(|g| {
+        if let Some(ref mut global_wgpu) = *g.borrow_mut() {
+            let device = &global_wgpu.device;
+            let embeddings_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Embeddings Buffer"),
+                contents: bytemuck::cast_slice(&flattened_embeddings),
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            });
 
-    let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        label: Some("Bind Group Layout"),
-        entries: &[
-            wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::COMPUTE,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            },
-            wgpu::BindGroupLayoutEntry {
-                binding: 1,
-                visibility: wgpu::ShaderStages::COMPUTE,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Storage { read_only: true },
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            },
-        ],
-    });
+            let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Uniform Buffer"),
+                contents: bytemuck::cast_slice(&[uniforms]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            });
 
-    let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-        label: Some("Bind Group"),
-        layout: &bind_group_layout,
-        entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: uniform_buffer.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 1,
-                resource: embeddings_buffer.as_entire_binding(),
-            },
-        ],
-    });
+            let bind_group_layout =
+                device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                    label: Some("Bind Group Layout"),
+                    entries: &[
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 0,
+                            visibility: wgpu::ShaderStages::COMPUTE,
+                            ty: wgpu::BindingType::Buffer {
+                                ty: wgpu::BufferBindingType::Uniform,
+                                has_dynamic_offset: false,
+                                min_binding_size: None,
+                            },
+                            count: None,
+                        },
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 1,
+                            visibility: wgpu::ShaderStages::COMPUTE,
+                            ty: wgpu::BindingType::Buffer {
+                                ty: wgpu::BufferBindingType::Storage { read_only: true },
+                                has_dynamic_offset: false,
+                                min_binding_size: None,
+                            },
+                            count: None,
+                        },
+                    ],
+                });
 
-    let shader_code: &str = include_str!("./shaders/embedding_lookup.wgsl");
+            let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("Bind Group"),
+                layout: &bind_group_layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: uniform_buffer.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: embeddings_buffer.as_entire_binding(),
+                    },
+                ],
+            });
 
-    let shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: Some("Embedding Lookup"),
-        source: wgpu::ShaderSource::Wgsl(shader_code.into()),
-    });
+            let shader_code: &str = include_str!("./shaders/embedding_lookup.wgsl");
 
-    let compute_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        label: Some("Compute Pipeline Layout"),
-        bind_group_layouts: &[&bind_group_layout],
-        push_constant_ranges: &[],
-    });
+            let shader_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+                label: Some("Embedding Lookup"),
+                source: wgpu::ShaderSource::Wgsl(shader_code.into()),
+            });
 
-    let compute_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-        label: Some("Compute Pipeline"),
-        layout: Some(&compute_pipeline_layout),
-        module: &shader_module,
-        entry_point: "main",
-    });
+            let compute_pipeline_layout =
+                device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                    label: Some("Compute Pipeline Layout"),
+                    bind_group_layouts: &[&bind_group_layout],
+                    push_constant_ranges: &[],
+                });
 
-    GLOBAL_WGPU.with(|global_wgpu_cell| {
-        if let Some(ref mut global_wgpu) = *global_wgpu_cell.borrow_mut() {
+            let compute_pipeline =
+                device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                    label: Some("Compute Pipeline"),
+                    layout: Some(&compute_pipeline_layout),
+                    module: &shader_module,
+                    entry_point: "main",
+                });
+
             global_wgpu.pipeline = Some(compute_pipeline);
+            global_wgpu.bind_group = Some(bind_group);
+            global_wgpu.embeddings_buffer = Some(embeddings_buffer);
             PIPELINE_INITIALIZED.store(true, Ordering::SeqCst);
         } else {
         }
@@ -143,29 +157,27 @@ fn init_pipeline(device: &wgpu::Device, flattened_embeddings: &Vec<f32>, uniform
 pub(crate) async fn setup_global_wgpu() {
     if !DEVICE_INITIALIZED.load(Ordering::SeqCst) {
         let global_wgpu = init_wgpu().await;
-        GLOBAL_WGPU.with(|global_wgpu_cell| {
-            if global_wgpu_cell.borrow().is_none() {
-                *global_wgpu_cell.borrow_mut() = Some(global_wgpu);
+        GLOBAL_WGPU.with(|g| {
+            if g.borrow().is_none() {
+                *g.borrow_mut() = Some(global_wgpu);
                 DEVICE_INITIALIZED.store(true, Ordering::SeqCst);
             }
         });
     }
 }
 
-pub(crate) fn load_embeddings_gpu(device: &wgpu::Device, embeddings: Vec<Embedding>) -> () {
-    let uniforms = Uniforms {
-        embedding_size: embeddings[0].vector.len() as u32,
-        num_embeddings: embeddings.len() as u32,
-    };
-
-    // need the clusters flat before putting them in the gpu buffer
-    let flattened_embeddings = embeddings
-        .into_iter()
-        .map(|embedding| embedding.vector)
-        .flatten()
-        .collect::<Vec<f32>>();
-
-    if !PIPELINE_INITIALIZED.load(Ordering::SeqCst) {
-        init_pipeline(device, &flattened_embeddings, uniforms);
-    }
+pub(crate) fn load_embeddings_gpu(flattened_embeddings: &mut Vec<f32>) -> () {
+    GLOBAL_WGPU.with(|g| {
+        if let Some(g) = &*g.borrow() {
+            let queue = &g.queue;
+            let embeddings_buffer = &g.embeddings_buffer;
+            if let Some(embeddings_buffer) = embeddings_buffer {
+                queue.write_buffer(
+                    embeddings_buffer,
+                    0,
+                    bytemuck::cast_slice(&flattened_embeddings),
+                );
+            }
+        }
+    });
 }

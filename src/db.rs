@@ -1,4 +1,5 @@
 use std::collections::{BTreeSet, HashMap, HashSet};
+use std::sync::atomic::Ordering;
 
 use nalgebra::DMatrix;
 use serde::{Deserialize, Serialize};
@@ -194,16 +195,6 @@ impl<D: DirectoryHandle> Victor<D> {
                 })
                 .collect();
 
-            gpu::GLOBAL_WGPU.with(|g| {
-                if let Some(g) = &*g.borrow() {
-                    let device = &g.device;
-                    let queue = &g.queue;
-                    let pipeline = &g.pipeline;
-
-                    gpu::load_embeddings_gpu(device, embeddings);
-                }
-            });
-
             let len_as_u32 = bincode::serialize(&new_embeddings[0])
                 .expect("Failed to serialize embeddings")
                 .len() as u32;
@@ -232,6 +223,24 @@ impl<D: DirectoryHandle> Victor<D> {
             writable.write_at_cursor_pos(combined).await.unwrap();
 
             writable.close().await.unwrap();
+
+            let uniforms = gpu::Uniforms {
+                embedding_size: new_embeddings[0].vector.len() as u32,
+                num_embeddings: new_embeddings.len() as u32,
+            };
+
+            // need the clusters flat before putting them in the gpu buffer
+            let mut flattened_embeddings = new_embeddings
+                .into_iter()
+                .map(|embedding| embedding.vector)
+                .flatten()
+                .collect::<Vec<f32>>();
+
+            if !gpu::PIPELINE_INITIALIZED.load(Ordering::SeqCst) {
+                gpu::init_pipeline(&mut flattened_embeddings, uniforms);
+            } else {
+                gpu::load_embeddings_gpu(&mut flattened_embeddings);
+            }
         }
     }
 
