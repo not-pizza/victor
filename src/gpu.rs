@@ -4,6 +4,29 @@ use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use wgpu::util::DeviceExt;
 
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::prelude::*;
+
+#[cfg(target_arch = "wasm32")]
+#[allow(unused_macros)]
+macro_rules! console_log {
+    ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
+}
+
+#[cfg(target_arch = "wasm32")]
+#[allow(unused_macros)]
+macro_rules! console_warn {
+    ($($t:tt)*) => (warn(&format_args!($($t)*).to_string()))
+}
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
+    #[wasm_bindgen(js_namespace = console)]
+    fn warn(s: &str);
+}
+
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 pub struct Uniforms {
@@ -247,6 +270,7 @@ pub fn load_embeddings_gpu(flattened_embeddings: &[f32]) {
 }
 
 pub(crate) async fn lookup_embeddings_gpu(lookup_embedding: &[f32]) -> () {
+    console_log!("lookup_embedding: {:?}", lookup_embedding);
     if PIPELINE_INITIALIZED.load(Ordering::SeqCst) {
         if let Some(global_wgpu) = GLOBAL_WGPU.with(|g| g.borrow().clone()) {
             let device = &global_wgpu.device;
@@ -287,9 +311,9 @@ pub(crate) async fn lookup_embeddings_gpu(lookup_embedding: &[f32]) -> () {
             if let Some(Ok(())) = receiver.receive().await {
                 let data_raw = &*readback_buffer_slice.get_mapped_range();
                 let data: &[f32] = bytemuck::cast_slice(data_raw);
-                println!("data: {:?}", &*data);
+                console_log!("data: {:?}", &*data);
             } else {
-                println!("Failed to readback buffer");
+                console_warn!("Failed to readback buffer");
             }
         }
     }
