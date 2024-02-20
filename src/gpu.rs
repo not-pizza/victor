@@ -1,7 +1,7 @@
 use bytemuck::{Pod, Zeroable};
 use std::cell::RefCell;
+use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
 use wgpu::util::DeviceExt;
 
 #[repr(C)]
@@ -13,14 +13,14 @@ pub struct Uniforms {
 
 #[derive(Clone)]
 pub struct GlobalWgpu {
-    pub device: Arc<wgpu::Device>,
-    pub queue: Arc<wgpu::Queue>,
-    pub pipeline: Option<Arc<wgpu::ComputePipeline>>,
-    pub bind_group: Option<Arc<wgpu::BindGroup>>,
-    pub embeddings_buffer: Option<Arc<wgpu::Buffer>>,
-    pub search_buffer: Option<Arc<wgpu::Buffer>>,
-    pub result_buffer: Option<Arc<wgpu::Buffer>>,
-    pub readback_buffer: Option<Arc<wgpu::Buffer>>,
+    pub device: Rc<wgpu::Device>,
+    pub queue: Rc<wgpu::Queue>,
+    pub pipeline: Option<Rc<wgpu::ComputePipeline>>,
+    pub bind_group: Option<Rc<wgpu::BindGroup>>,
+    pub embeddings_buffer: Option<Rc<wgpu::Buffer>>,
+    pub search_buffer: Option<Rc<wgpu::Buffer>>,
+    pub result_buffer: Option<Rc<wgpu::Buffer>>,
+    pub readback_buffer: Option<Rc<wgpu::Buffer>>,
 }
 
 thread_local! {
@@ -245,7 +245,7 @@ pub fn load_embeddings_gpu(flattened_embeddings: &[f32]) {
     });
 }
 
-pub(crate) async fn lookup_embeddings_gpu() -> () {
+pub(crate) async fn lookup_embeddings_gpu(lookup_embedding: &[f32]) -> () {
     if PIPELINE_INITIALIZED.load(Ordering::SeqCst) {
         if let Some(global_wgpu) = GLOBAL_WGPU.with(|g| g.borrow().clone()) {
             let device = &global_wgpu.device;
@@ -254,6 +254,9 @@ pub(crate) async fn lookup_embeddings_gpu() -> () {
             let bind_group = &global_wgpu.bind_group.unwrap();
             let result_buffer = &global_wgpu.result_buffer.unwrap();
             let readback_buffer = &global_wgpu.readback_buffer.unwrap();
+            let search_buffer = &global_wgpu.search_buffer.unwrap();
+
+            queue.write_buffer(&search_buffer, 0, bytemuck::cast_slice(lookup_embedding));
 
             let mut command_encoder =
                 device.create_command_encoder(&wgpu::CommandEncoderDescriptor {

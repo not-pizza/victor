@@ -111,7 +111,7 @@ impl<D: DirectoryHandle> Victor<D> {
             vector = self.project_single_vector(vector).await;
         }
 
-        gpu::lookup_embeddings_gpu().await;
+        gpu::lookup_embeddings_gpu(&vector).await;
 
         for file_handle in file_handles {
             let file = file_handle.read().await.unwrap();
