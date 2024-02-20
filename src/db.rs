@@ -11,7 +11,6 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::decomposition::{center_data, embeddings_to_dmatrix, project_to_lower_dimension};
 
-use crate::gpu::GLOBAL_WGPU;
 use crate::{
     filesystem::{
         CreateWritableOptions, DirectoryHandle, FileHandle, GetFileHandleOptions,
@@ -112,7 +111,7 @@ impl<D: DirectoryHandle> Victor<D> {
             vector = self.project_single_vector(vector).await;
         }
 
-        gpu::lookup_embeddings_gpu();
+        gpu::lookup_embeddings_gpu().await;
 
         for file_handle in file_handles {
             let file = file_handle.read().await.unwrap();

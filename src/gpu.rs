@@ -1,6 +1,7 @@
 use bytemuck::{Pod, Zeroable};
 use std::cell::RefCell;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use wgpu::util::DeviceExt;
 
 #[repr(C)]
@@ -9,14 +10,17 @@ pub struct Uniforms {
     pub embedding_size: u32,
     pub num_embeddings: u32,
 }
+
+#[derive(Clone)]
 pub struct GlobalWgpu {
-    pub device: wgpu::Device,
-    pub queue: wgpu::Queue,
-    pub pipeline: Option<wgpu::ComputePipeline>,
-    pub bind_group: Option<wgpu::BindGroup>,
-    pub embeddings_buffer: Option<wgpu::Buffer>,
-    pub search_buffer: Option<wgpu::Buffer>,
-    pub result_buffer: Option<wgpu::Buffer>,
+    pub device: Arc<wgpu::Device>,
+    pub queue: Arc<wgpu::Queue>,
+    pub pipeline: Option<Arc<wgpu::ComputePipeline>>,
+    pub bind_group: Option<Arc<wgpu::BindGroup>>,
+    pub embeddings_buffer: Option<Arc<wgpu::Buffer>>,
+    pub search_buffer: Option<Arc<wgpu::Buffer>>,
+    pub result_buffer: Option<Arc<wgpu::Buffer>>,
+    pub readback_buffer: Option<Arc<wgpu::Buffer>>,
 }
 
 thread_local! {
@@ -53,13 +57,14 @@ async fn init_wgpu() -> GlobalWgpu {
         .expect("Failed to create device");
 
     GlobalWgpu {
-        device,
-        queue,
-        pipeline: None,
-        bind_group: None,
-        embeddings_buffer: None,
-        search_buffer: None,
-        result_buffer: None,
+        device: device.into(),
+        queue: queue.into(),
+        pipeline: None.into(),
+        bind_group: None.into(),
+        embeddings_buffer: None.into(),
+        search_buffer: None.into(),
+        result_buffer: None.into(),
+        readback_buffer: None.into(),
     }
 }
 
@@ -69,7 +74,8 @@ pub fn init_pipeline(flattened_embeddings: &mut Vec<f32>, uniforms: Uniforms) ->
 
     flattened_embeddings.resize(total_cap, 0.0);
     GLOBAL_WGPU.with(|g| {
-        if let Some(ref mut global_wgpu) = *g.borrow_mut() {
+        let mut gw = g.borrow_mut();
+        if let Some(ref mut global_wgpu) = *gw {
             let device = &global_wgpu.device;
             let embeddings_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("Embeddings Buffer"),
@@ -87,7 +93,14 @@ pub fn init_pipeline(flattened_embeddings: &mut Vec<f32>, uniforms: Uniforms) ->
             let result_buffer = device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some("Result Buffer"),
                 size: 1024,
-                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+                mapped_at_creation: false,
+            });
+
+            let readback_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("Readback Buffer"),
+                size: 1024,
+                usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST, // For copying data into it and reading back on CPU
                 mapped_at_creation: false,
             });
 
@@ -189,74 +202,91 @@ pub fn init_pipeline(flattened_embeddings: &mut Vec<f32>, uniforms: Uniforms) ->
                     entry_point: "main",
                 });
 
-            global_wgpu.pipeline = Some(compute_pipeline);
-            global_wgpu.bind_group = Some(bind_group);
-            global_wgpu.embeddings_buffer = Some(embeddings_buffer);
+            global_wgpu.pipeline = Some(compute_pipeline.into());
+            global_wgpu.bind_group = Some(bind_group.into());
+            global_wgpu.embeddings_buffer = Some(embeddings_buffer.into());
+            global_wgpu.result_buffer = Some(result_buffer.into());
+            global_wgpu.readback_buffer = Some(readback_buffer.into());
             PIPELINE_INITIALIZED.store(true, Ordering::SeqCst);
-        } else {
         }
     });
 }
 
 pub(crate) async fn setup_global_wgpu() {
     if !DEVICE_INITIALIZED.load(Ordering::SeqCst) {
-        let global_wgpu = init_wgpu().await;
+        let new_global_wgpu = init_wgpu().await;
+
         GLOBAL_WGPU.with(|g| {
-            if g.borrow().is_none() {
-                *g.borrow_mut() = Some(global_wgpu);
+            let mut global_wgpu = g.borrow_mut();
+
+            if global_wgpu.is_none() {
+                *global_wgpu = Some(new_global_wgpu);
                 DEVICE_INITIALIZED.store(true, Ordering::SeqCst);
+            } else {
+                // this should never run unless the device is initialized twice
+                panic!("Global WGPU already initialized");
             }
         });
     }
 }
 
-pub(crate) fn load_embeddings_gpu(flattened_embeddings: &mut Vec<f32>) -> () {
+pub fn load_embeddings_gpu(flattened_embeddings: &[f32]) {
     GLOBAL_WGPU.with(|g| {
-        if let Some(g) = &*g.borrow() {
-            let queue = &g.queue;
-            let embeddings_buffer = &g.embeddings_buffer;
-            if let Some(embeddings_buffer) = embeddings_buffer {
+        if let Some(global_wgpu) = &*g.borrow() {
+            let queue = &global_wgpu.queue;
+            if let Some(embeddings_buffer) = global_wgpu.embeddings_buffer.as_ref() {
                 queue.write_buffer(
                     embeddings_buffer,
                     0,
-                    bytemuck::cast_slice(&flattened_embeddings),
+                    bytemuck::cast_slice(flattened_embeddings),
                 );
             }
         }
     });
 }
 
-pub(crate) fn lookup_embeddings_gpu() -> () {
+pub(crate) async fn lookup_embeddings_gpu() -> () {
     if PIPELINE_INITIALIZED.load(Ordering::SeqCst) {
-        GLOBAL_WGPU.with(|g| {
-            if let Some(g) = &*g.borrow() {
-                let device = &g.device;
-                let queue = &g.queue;
-                let pipeline = &g
-                    .pipeline
-                    .as_ref()
-                    .expect("Compute pipeline not initialized");
-                let bind_group = &g.bind_group.as_ref().expect("Bind group not initialized");
+        if let Some(global_wgpu) = GLOBAL_WGPU.with(|g| g.borrow().clone()) {
+            let device = &global_wgpu.device;
+            let queue = &global_wgpu.queue;
+            let pipeline = &global_wgpu.pipeline.unwrap();
+            let bind_group = &global_wgpu.bind_group.unwrap();
+            let result_buffer = &global_wgpu.result_buffer.unwrap();
+            let readback_buffer = &global_wgpu.readback_buffer.unwrap();
 
-                let mut command_encoder =
-                    device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                        label: Some("Compute Command Encoder"),
+            let mut command_encoder =
+                device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("Compute Command Encoder"),
+                });
+
+            {
+                let mut compute_pass =
+                    command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+                        label: Some("Compute Pass"),
+                        timestamp_writes: None,
                     });
 
-                {
-                    let mut compute_pass =
-                        command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
-                            label: Some("Compute Pass"),
-                            timestamp_writes: None,
-                        });
-
-                    compute_pass.set_pipeline(pipeline);
-                    compute_pass.set_bind_group(0, bind_group, &[]);
-                    compute_pass.dispatch_workgroups(1, 1, 1); // Adjust based on your needs
-                }
-
-                queue.submit(Some(command_encoder.finish()));
+                compute_pass.set_pipeline(&pipeline);
+                compute_pass.set_bind_group(0, &bind_group, &[]);
+                compute_pass.dispatch_workgroups(64, 1, 1);
             }
-        })
+
+            command_encoder.copy_buffer_to_buffer(&result_buffer, 0, &readback_buffer, 0, 1024);
+
+            queue.submit(Some(command_encoder.finish()));
+
+            let readback_buffer_slice = readback_buffer.slice(..);
+            let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
+            readback_buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
+
+            if let Some(Ok(())) = receiver.receive().await {
+                let data_raw = &*readback_buffer_slice.get_mapped_range();
+                let data: &[f32] = bytemuck::cast_slice(data_raw);
+                println!("data: {:?}", &*data);
+            } else {
+                println!("Failed to readback buffer");
+            }
+        }
     }
 }
