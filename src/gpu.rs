@@ -85,21 +85,21 @@ pub fn init_pipeline(flattened_embeddings: &mut Vec<f32>, uniforms: Uniforms) ->
 
             let search_buffer = device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some("Search Buffer"),
-                size: 1024,
-                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+                size: 2000,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
                 mapped_at_creation: false,
             });
 
             let result_buffer = device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some("Result Buffer"),
-                size: 1024,
+                size: 2000,
                 usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
                 mapped_at_creation: false,
             });
 
             let readback_buffer = device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some("Readback Buffer"),
-                size: 1024,
+                size: 2000,
                 usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST, // For copying data into it and reading back on CPU
                 mapped_at_creation: false,
             });
@@ -207,6 +207,7 @@ pub fn init_pipeline(flattened_embeddings: &mut Vec<f32>, uniforms: Uniforms) ->
             global_wgpu.embeddings_buffer = Some(embeddings_buffer.into());
             global_wgpu.result_buffer = Some(result_buffer.into());
             global_wgpu.readback_buffer = Some(readback_buffer.into());
+            global_wgpu.search_buffer = Some(search_buffer.into());
             PIPELINE_INITIALIZED.store(true, Ordering::SeqCst);
         }
     });
@@ -275,7 +276,7 @@ pub(crate) async fn lookup_embeddings_gpu(lookup_embedding: &[f32]) -> () {
                 compute_pass.dispatch_workgroups(64, 1, 1);
             }
 
-            command_encoder.copy_buffer_to_buffer(&result_buffer, 0, &readback_buffer, 0, 1024);
+            command_encoder.copy_buffer_to_buffer(&result_buffer, 0, &readback_buffer, 0, 2000);
 
             queue.submit(Some(command_encoder.finish()));
 
