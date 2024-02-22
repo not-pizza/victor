@@ -111,7 +111,7 @@ impl<D: DirectoryHandle> Victor<D> {
             vector = self.project_single_vector(vector).await;
         }
 
-        gpu::lookup_embeddings_gpu(&vector).await;
+        let gpu_result = gpu::lookup_embeddings_gpu(&vector).await;
 
         for file_handle in file_handles {
             let file = file_handle.read().await.unwrap();
@@ -135,6 +135,10 @@ impl<D: DirectoryHandle> Victor<D> {
         if let Some(nearest) = nearest_embedding {
             let content = self.get_content(nearest.id).await;
 
+            let unwrapped_gpu = gpu_result.unwrap();
+            console_log!("CPU: {:?}", nearest.vector);
+            console_log!("GPU: {:?}", unwrapped_gpu);
+
             Some(Content {
                 id: nearest.id,
                 content,
@@ -151,8 +155,8 @@ impl<D: DirectoryHandle> Victor<D> {
 
         let (eigenvectors, means) = project_to_lower_dimension(prev_embeddings.clone(), 500);
         let vector_projection: VectorProjection = VectorProjection {
+            means,
             eigen: eigenvectors.clone(),
-            means: means,
         };
 
         self.write_projection(vector_projection.clone()).await;
@@ -225,24 +229,6 @@ impl<D: DirectoryHandle> Victor<D> {
             writable.write_at_cursor_pos(combined).await.unwrap();
 
             writable.close().await.unwrap();
-
-            let uniforms = gpu::Uniforms {
-                embedding_size: new_embeddings[0].vector.len() as u32,
-                num_embeddings: new_embeddings.len() as u32,
-            };
-
-            // need the clusters flat before putting them in the gpu buffer
-            let mut flattened_embeddings = new_embeddings
-                .into_iter()
-                .map(|embedding| embedding.vector)
-                .flatten()
-                .collect::<Vec<f32>>();
-
-            if !gpu::PIPELINE_INITIALIZED.load(Ordering::SeqCst) {
-                gpu::init_pipeline(&mut flattened_embeddings, uniforms);
-            } else {
-                gpu::load_embeddings_gpu(&mut flattened_embeddings);
-            }
         }
     }
 
@@ -271,7 +257,7 @@ impl<D: DirectoryHandle> Victor<D> {
         writable.close().await.unwrap();
     }
 
-    async fn get_all_embeddings(&mut self) -> Vec<Embedding> {
+    pub async fn get_all_embeddings(&mut self) -> Vec<Embedding> {
         let file_handles = Index::get_matching_db_files(
             &mut self.root,
             Vec::new().into_iter().collect::<BTreeSet<_>>(),

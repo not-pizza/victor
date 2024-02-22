@@ -1,3 +1,4 @@
+use std::sync::atomic::Ordering;
 use wasm_bindgen_futures::JsFuture;
 
 mod db;
@@ -125,6 +126,28 @@ impl Db {
         let result = self.victor.clear_db().await; // ignore the error if there is one
         if !result.is_ok() {
             console_warn!("Failed to clear victor data: {:?}", result);
+        }
+    }
+
+    pub async fn test_gpu(&mut self) {
+        let all_embeddings = self.victor.get_all_embeddings().await;
+
+        let uniforms = gpu::Uniforms {
+            embedding_size: all_embeddings[0].vector.len() as u32,
+            num_embeddings: all_embeddings.len() as u32,
+        };
+
+        // need the clusters flat before putting them in the gpu buffer
+        let mut flattened_embeddings = all_embeddings
+            .into_iter()
+            .map(|embedding| embedding.vector)
+            .flatten()
+            .collect::<Vec<f32>>();
+
+        if !gpu::PIPELINE_INITIALIZED.load(Ordering::SeqCst) {
+            gpu::init_pipeline(&mut flattened_embeddings, uniforms);
+        } else {
+            gpu::load_embeddings_gpu(&mut flattened_embeddings);
         }
     }
 }

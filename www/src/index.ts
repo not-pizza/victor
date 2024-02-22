@@ -131,6 +131,8 @@ async function embedAllFlatlands() {
     }
     console.log(flatland.paragraphs.length - i);
   }
+  const db = await new Db();
+  db.test_gpu();
 }
 
 function restoreOpenaiApiKey() {

@@ -4,29 +4,6 @@ use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use wgpu::util::DeviceExt;
 
-#[cfg(target_arch = "wasm32")]
-use wasm_bindgen::prelude::*;
-
-#[cfg(target_arch = "wasm32")]
-#[allow(unused_macros)]
-macro_rules! console_log {
-    ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
-}
-
-#[cfg(target_arch = "wasm32")]
-#[allow(unused_macros)]
-macro_rules! console_warn {
-    ($($t:tt)*) => (warn(&format_args!($($t)*).to_string()))
-}
-#[cfg(target_arch = "wasm32")]
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = console)]
-    fn log(s: &str);
-    #[wasm_bindgen(js_namespace = console)]
-    fn warn(s: &str);
-}
-
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 pub struct Uniforms {
@@ -269,8 +246,7 @@ pub fn load_embeddings_gpu(flattened_embeddings: &[f32]) {
     });
 }
 
-pub(crate) async fn lookup_embeddings_gpu(lookup_embedding: &[f32]) -> () {
-    console_log!("lookup_embedding: {:?}", lookup_embedding);
+pub(crate) async fn lookup_embeddings_gpu(lookup_embedding: &[f32]) -> Result<Vec<f32>, String> {
     if PIPELINE_INITIALIZED.load(Ordering::SeqCst) {
         if let Some(global_wgpu) = GLOBAL_WGPU.with(|g| g.borrow().clone()) {
             let device = &global_wgpu.device;
@@ -308,13 +284,22 @@ pub(crate) async fn lookup_embeddings_gpu(lookup_embedding: &[f32]) -> () {
             let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
             readback_buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
 
-            if let Some(Ok(())) = receiver.receive().await {
-                let data_raw = &*readback_buffer_slice.get_mapped_range();
-                let data: &[f32] = bytemuck::cast_slice(data_raw);
-                console_log!("data: {:?}", &*data);
-            } else {
-                console_warn!("Failed to readback buffer");
+            match receiver.receive().await {
+                Some(Ok(())) => {
+                    let data_raw = readback_buffer_slice.get_mapped_range();
+                    if data_raw.len() % std::mem::size_of::<f32>() == 0 {
+                        let data: &[f32] = bytemuck::cast_slice(&data_raw);
+                        Ok(data.to_vec())
+                    } else {
+                        Err("Data length is not aligned with f32 size".to_string())
+                    }
+                }
+                _ => Err("Failed to read back buffer".to_string()),
             }
+        } else {
+            Err("Global WGPU not found".to_string())
         }
+    } else {
+        Err("Pipeline not initialized".to_string())
     }
 }
