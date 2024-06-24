@@ -13,7 +13,7 @@ readme = "README.md"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-nalgebra = { version = "0.32", features = ["serde-serialize"] }
+nalgebra = { version = "0.33", features = ["serde-serialize"] }
 bincode = { version = "1" }
 serde = { version = "1", features = ["derive"] }
 console_error_panic_hook = "0"
