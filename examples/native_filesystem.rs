@@ -12,16 +12,16 @@ async fn main() {
     victor
         .add_many(
             vec!["Pineapple", "Rocks"], // documents
-            vec!["PizzaToppings"],      // tags (only used for filtering)
+            vec!["Pizza Toppings"],     // tags (only used for filtering)
         )
         .await;
 
-    victor.add("Cheese pizza", vec![]).await; // Add another entry with no tags
+    victor.add("Cheese pizza", vec!["Pizza Flavors"]).await; // Add another entry with no tags
 
-    // read the 10 closest results from victor that are tagged with "tags"
+    // read the 10 closest results from victor that are tagged with "Pizza Toppings"
     // (only 2 will be returned because we only inserted two embeddings)
     let nearest = victor
-        .search("Hawaiian pizza", vec!["PizzaToppings"], 10)
+        .search("Hawaiian pizza", vec!["Pizza Toppings"], 10)
         .await
         .first()
         .unwrap()

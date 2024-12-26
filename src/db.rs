@@ -102,7 +102,7 @@ impl<D: DirectoryHandle> Victor<D> {
     /// Embedding will be generated for the document.
     /// When adding many documents, it is more efficient to use `add_many`.
     #[cfg(not(target_arch = "wasm32"))]
-    pub async fn add(&mut self, content: impl Into<String>, tags: Vec<String>) {
+    pub async fn add(&mut self, content: impl Into<String>, tags: Vec<impl Into<String>>) {
         self.add_many(vec![content], tags).await;
     }
 
