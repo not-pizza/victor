@@ -54,6 +54,8 @@ cargo add victor-db
 
 #### Usage
 
+The Rust API can automatically create embeddings for you with [fastembed-rs](https://github.com/anush008/fastembed-rs?tab=readme-ov-file)'s default model (currently [BAAI/bge-small-en-v1.5](https://huggingface.co/BAAI/bge-small-en-v1.5)).
+
 ```rust
 use std::path::PathBuf;
 

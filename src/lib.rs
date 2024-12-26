@@ -93,7 +93,7 @@ impl Db {
             })
             .unwrap_or(vec![]);
 
-        self.victor.write(content, embedding, tags).await;
+        self.victor.add_embedding(content, embedding, tags).await;
     }
 
     pub async fn search(
