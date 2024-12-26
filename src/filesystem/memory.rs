@@ -113,7 +113,7 @@ impl filesystem::WritableFileStream for WritableFileStream {
             .collect::<Vec<u8>>();
 
         self.cursor_pos += data_len;
-        
+
         Ok(())
     }
 

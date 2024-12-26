@@ -80,11 +80,15 @@ impl<D: DirectoryHandle> Victor<D> {
     #[cfg(not(target_arch = "wasm32"))]
     pub async fn add_many(&mut self, content: Vec<impl Into<String>>, tags: Vec<String>) {
         let model = fastembed::TextEmbedding::try_new(Default::default()).unwrap();
-        let content = content.into_iter().map(|c| c.into()).collect::<Vec<String>>();
+        let content = content
+            .into_iter()
+            .map(|c| c.into())
+            .collect::<Vec<String>>();
 
         let vectors = model.embed(content.clone(), None).unwrap();
         for (vector, content) in vectors.iter().zip(content.iter()) {
-            self.write(content.clone(), vector.clone(), tags.clone()).await;
+            self.write(content.clone(), vector.clone(), tags.clone())
+                .await;
         }
     }
 
@@ -105,10 +109,20 @@ impl<D: DirectoryHandle> Victor<D> {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    pub async fn search(&self, content: impl Into<String>, with_tags: Vec<String>, top_n: u32) -> Vec<NearestNeighborsResult> {
+    pub async fn search(
+        &self,
+        content: impl Into<String>,
+        with_tags: Vec<String>,
+        top_n: u32,
+    ) -> Vec<NearestNeighborsResult> {
         let model = fastembed::TextEmbedding::try_new(Default::default()).unwrap();
         let content = content.into();
-        let vector = model.embed(vec![content.clone()], None).unwrap().first().cloned().unwrap();
+        let vector = model
+            .embed(vec![content.clone()], None)
+            .unwrap()
+            .first()
+            .cloned()
+            .unwrap();
         self.search_embedding(vector, with_tags, top_n).await
     }
 
