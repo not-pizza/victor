@@ -93,7 +93,7 @@ impl Db {
             })
             .unwrap_or(vec![]);
 
-        self.victor.write(content, embedding, tags).await;
+        self.victor.add_embedding(content, embedding, tags).await;
     }
 
     pub async fn search(
@@ -114,7 +114,7 @@ impl Db {
 
         let nearest_neighbors = self
             .victor
-            .find_nearest_neighbors(embedding, tags, top_n.unwrap_or(10.0) as u32)
+            .search_embedding(embedding, tags, top_n.unwrap_or(10.0) as u32)
             .await;
 
         serde_wasm_bindgen::to_value(&nearest_neighbors).unwrap()

@@ -10,6 +10,7 @@ module.exports = {
   mode: 'development',
   experiments: {
     asyncWebAssembly: true,
+    syncWebAssembly: true,
   },
   module: {
     rules: [
@@ -25,7 +26,11 @@ module.exports = {
     ],
   },
   resolve: {
-    extensions: ['.tsx', '.ts', '.js'],
+    extensions: ['.tsx', '.ts', '.js', '.wasm'],
   },
-  plugins: [new CopyWebpackPlugin([{ from: 'index.html', to: 'index.html' }])],
+  plugins: [new CopyWebpackPlugin({
+    patterns: [
+      { from: 'index.html' }
+    ]
+  })],
 };

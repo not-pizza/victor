@@ -77,7 +77,32 @@ impl<D: DirectoryHandle> Victor<D> {
         Self { root }
     }
 
-    pub async fn write(&mut self, content: impl Into<String>, vector: Vec<f32>, tags: Vec<String>) {
+    #[cfg(not(target_arch = "wasm32"))]
+    pub async fn add_many(&mut self, content: Vec<impl Into<String>>, tags: Vec<String>) {
+        let model = fastembed::TextEmbedding::try_new(Default::default()).unwrap();
+        let content = content
+            .into_iter()
+            .map(|c| c.into())
+            .collect::<Vec<String>>();
+
+        let vectors = model.embed(content.clone(), None).unwrap();
+        for (vector, content) in vectors.iter().zip(content.iter()) {
+            self.add_embedding(content.clone(), vector.clone(), tags.clone())
+                .await;
+        }
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub async fn add(&mut self, content: impl Into<String>, tags: Vec<String>) {
+        self.add_many(vec![content], tags).await;
+    }
+
+    pub async fn add_embedding(
+        &mut self,
+        content: impl Into<String>,
+        vector: Vec<f32>,
+        tags: Vec<String>,
+    ) {
         let content = content.into();
 
         let id = Uuid::new_v4();
@@ -88,7 +113,25 @@ impl<D: DirectoryHandle> Victor<D> {
         self.write_content(content, id).await.unwrap();
     }
 
-    pub async fn find_nearest_neighbors(
+    #[cfg(not(target_arch = "wasm32"))]
+    pub async fn search(
+        &self,
+        content: impl Into<String>,
+        with_tags: Vec<String>,
+        top_n: u32,
+    ) -> Vec<NearestNeighborsResult> {
+        let model = fastembed::TextEmbedding::try_new(Default::default()).unwrap();
+        let content = content.into();
+        let vector = model
+            .embed(vec![content.clone()], None)
+            .unwrap()
+            .first()
+            .cloned()
+            .unwrap();
+        self.search_embedding(vector, with_tags, top_n).await
+    }
+
+    pub async fn search_embedding(
         &self,
         mut vector: Vec<f32>,
         with_tags: Vec<String>,
@@ -573,7 +616,7 @@ impl Eq for NearestNeighborsResult {}
 
 impl PartialOrd for NearestNeighborsResult {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.similarity.partial_cmp(&other.similarity)
+        Some(self.cmp(other))
     }
 }
 

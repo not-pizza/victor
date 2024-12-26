@@ -10,14 +10,14 @@ async fn main() {
     victor.clear_db().await.unwrap();
 
     victor
-        .write(
+        .add_embedding(
             "Test Vector 1",
             vec![1.0, 0.0, 0.0],
             vec!["Test".to_string()],
         )
         .await;
     victor
-        .write(
+        .add_embedding(
             "Test Vector 2",
             vec![0.0, 1.0, 0.0],
             vec!["Test".to_string()],
@@ -27,7 +27,7 @@ async fn main() {
     // read the 10 closest results from victor that are tagged with "tags"
     // (only 2 will be returned because we only inserted two embeddings)
     let nearest = victor
-        .find_nearest_neighbors(vec![0.9, 0.0, 0.0], vec!["Test".to_string()], 10)
+        .search_embedding(vec![0.9, 0.0, 0.0], vec!["Test".to_string()], 10)
         .await
         .first()
         .unwrap()

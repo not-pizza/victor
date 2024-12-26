@@ -54,6 +54,8 @@ cargo add victor-db
 
 #### Usage
 
+The Rust API can automatically create embeddings for you with [fastembed-rs](https://github.com/anush008/fastembed-rs?tab=readme-ov-file)'s default model (currently [BAAI/bge-small-en-v1.5](https://huggingface.co/BAAI/bge-small-en-v1.5)).
+
 ```rust
 use std::path::PathBuf;
 
@@ -65,30 +67,22 @@ let mut victor = Db::new(PathBuf::from("./victor_test_data"));
 victor.clear_db().await.unwrap();
 
 victor
-    .write(
-        "Test Vector 1",
-        vec![1.0, 0.0, 0.0],
-        vec!["Test".to_string()],
-    )
-    .await;
-victor
-    .write(
-        "Test Vector 2",
-        vec![0.0, 1.0, 0.0],
-        vec!["Test".to_string()],
+    .add_many(
+        vec!["Pinapple", "Rocks"], // documents
+        vec!["PizzaToppings"], // tags (only used for filtering)
     )
     .await;
 
 // read the 10 closest results from victor that are tagged with "tags"
 // (only 2 will be returned because we only inserted two embeddings)
 let nearest = victor
-   .find_nearest_neighbors(vec![0.9, 0.0, 0.0], vec!["Test".to_string()], 10)
+   .search(vec!["Hawaiian pizza".to_string()], 10)
    .await
    .first()
    .unwrap()
    .content
    .clone();
-assert_eq!(nearest, "Test Vector 1".to_string());
+assert_eq!(nearest, "Pineapple".to_string());
 ```
 
 This example is also in the `/examples` directory. If you've cloned this repository, you can run it with `cargo run --example native_filesystem`.
@@ -100,7 +94,7 @@ This example is also in the `/examples` directory. If you've cloned this reposit
    **Install wasm** pack with `cargo install wasm-pack` or `npm i -g wasm-pack`
    (https://rustwasm.github.io/wasm-pack/installer/)
 
-2. **Build Victor** with `wasm-pack build`
+2. **Build Victor** with `wasm-pack build --target web`
 
 3. **Set up the example project**, which is in `www/`.
 

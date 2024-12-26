@@ -29,15 +29,21 @@
   "dependencies": {
     "victor": "file:../pkg"
   },
+  "browser": {
+    "victor": false   
+  },
   "devDependencies": {
-    "@webpack-cli/serve": "^2.0.5",
-    "copy-webpack-plugin": "^5.0.0",
+    "@webpack-cli/serve": "^3.0.1",
+    "copy-webpack-plugin": "^12.0.2",
     "hello-wasm-pack": "^0.1.0",
-    "prettier": "^3.0.2",
-    "ts-loader": "^9.4.4",
-    "typescript": "^5.1.6",
-    "webpack": "^5.88.2",
-    "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^4.15.1"
+    "prettier": "^3.4.2",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.7.2",
+    "webpack": "^5.97.1",
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^5.2.0",
+    "@webassemblyjs/ast": "^1.14.1",
+    "@webassemblyjs/wasm-edit": "^1.14.1",
+    "@webassemblyjs/wasm-parser": "^1.14.1"
   }
 }
