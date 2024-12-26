@@ -32,11 +32,14 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-      - name: Run clippy
-        run: cargo clippy -- -D warnings
+      - name: Run clippy (wasm)
+        run: cargo clippy --all-targets -- -D warnings
 
       - name: Run tests
         run: cargo test
+
+      - name: Run examples
+        run: cargo test --examples
 
       - name: Check semver
         uses: obi1kenobi/cargo-semver-checks-action@v2

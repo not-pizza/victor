@@ -6,6 +6,7 @@ use async_trait::async_trait;
 
 use crate::filesystem;
 
+/// An entry in a virtual directory in the in-memory filesystem.
 #[derive(Debug, Clone)]
 pub enum DirectoryEntry {
     #[allow(dead_code)]
@@ -13,12 +14,15 @@ pub enum DirectoryEntry {
     File(FileHandle),
 }
 
+/// A virtual directory in the in-memory filesystem.
 #[derive(Debug, Clone)]
 pub struct DirectoryHandle(Rc<RefCell<HashMap<String, DirectoryEntry>>>);
 
+/// A virtual file in the in-memory filesystem.
 #[derive(Debug, Clone)]
 pub struct FileHandle(WritableFileStream);
 
+/// A writable file stream in the in-memory filesystem.
 #[derive(Debug, Clone)]
 pub struct WritableFileStream {
     cursor_pos: usize,
@@ -61,10 +65,8 @@ impl filesystem::DirectoryHandle for DirectoryHandle {
         Ok(())
     }
 }
-
-impl DirectoryHandle {
-    #[allow(dead_code)]
-    pub(crate) fn new() -> Self {
+impl Default for DirectoryHandle {
+    fn default() -> Self {
         Self(Rc::new(RefCell::new(HashMap::new())))
     }
 }

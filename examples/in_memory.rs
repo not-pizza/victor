@@ -1,11 +1,8 @@
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
-    use std::path::PathBuf;
+    use victor_db::memory::{Db, DirectoryHandle};
 
-    use victor_db::native::Db;
-
-    let _ = std::fs::create_dir("./victor_test_data");
-    let mut victor = Db::new(PathBuf::from("./victor_test_data"));
+    let mut victor = Db::new(DirectoryHandle::default());
 
     victor.clear_db().await.unwrap();
 

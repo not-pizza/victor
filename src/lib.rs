@@ -1,3 +1,7 @@
+//! A browser-optimized vector database. Backed by the private virtual filesystem API on web. On native, supports running with the native filesystem or in memory.
+
+#![deny(missing_docs)]
+
 mod db;
 mod decomposition;
 mod filesystem;
@@ -18,19 +22,24 @@ type Victor = crate::db::Victor<filesystem::web::DirectoryHandle>;
 
 // Native
 
+/// Used to tell victor to use the native filesystem.
 #[cfg(not(target_arch = "wasm32"))]
 pub mod native {
     use crate::db::Victor;
 
+    /// A native vector database.
     pub type Db = Victor<crate::filesystem::native::DirectoryHandle>;
 }
 
+/// Used to tell victor to use an in-memory filesystem.
 #[cfg(not(target_arch = "wasm32"))]
 pub mod memory {
     use crate::db::Victor;
 
+    /// The directory handle type for the in-memory filesystem.
     pub use crate::filesystem::memory::DirectoryHandle;
 
+    /// An in-memory vector database.
     pub type Db = Victor<DirectoryHandle>;
 }
 
@@ -56,6 +65,7 @@ extern "C" {
     fn warn(s: &str);
 }
 
+/// A browser-optimized vector database.
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 pub struct Db {
@@ -65,6 +75,7 @@ pub struct Db {
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 impl Db {
+    /// Connect to victor.
     #[wasm_bindgen(constructor)]
     pub async fn new() -> Self {
         utils::set_panic_hook();
@@ -82,6 +93,7 @@ impl Db {
         Self { victor }
     }
 
+    /// Add a document to the database.
     pub async fn insert(&mut self, content: &str, embedding: &[f64], tags: Option<Vec<JsValue>>) {
         let embedding = embedding.iter().map(|x| *x as f32).collect::<Vec<_>>();
 
@@ -96,6 +108,7 @@ impl Db {
         self.victor.add_embedding(content, embedding, tags).await;
     }
 
+    /// Search the database for the nearest neighbors to a given embedding.
     pub async fn search(
         &mut self,
         embedding: &[f64],
@@ -120,6 +133,7 @@ impl Db {
         serde_wasm_bindgen::to_value(&nearest_neighbors).unwrap()
     }
 
+    /// Clear the database, permanently removing all data.
     pub async fn clear(&mut self) {
         utils::set_panic_hook();
 
