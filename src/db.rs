@@ -85,6 +85,19 @@ impl<D: DirectoryHandle> Victor<D> {
 
     /// Add many documents to the database.
     /// Embeddings will be generated for each document.
+    /// 
+    /// ```rust
+    /// # tokio_test::block_on(async {
+    /// # use victor_db::memory::{Db, DirectoryHandle};
+    /// # let mut victor = Db::new(DirectoryHandle::default());
+    /// victor
+    ///     .add(
+    ///         vec!["Pineapple", "Rocks"], // documents
+    ///         vec!["Pizza Toppings"],     // tags (only used for filtering)
+    ///     )
+    ///     .await;
+    /// # })
+    /// ```
     #[cfg(not(target_arch = "wasm32"))]
     pub async fn add(&mut self, content: Vec<impl Into<String>>, tags: Vec<impl Into<String>>) {
         let tags = tags.into_iter().map(|t| t.into()).collect::<Vec<String>>();
@@ -103,13 +116,29 @@ impl<D: DirectoryHandle> Victor<D> {
     /// Add a single document to the database.
     /// Embedding will be generated for the document.
     /// When adding many documents, it is more efficient to use `add`.
+    /// 
+    /// ```rust
+    /// # tokio_test::block_on(async {
+    /// # use victor_db::memory::{Db, DirectoryHandle};
+    /// # let mut victor = Db::new(DirectoryHandle::default());
+    /// victor.add_single("Pepperoni pizza", vec!["Pizza Flavors"]).await;
+    /// # })
+    /// ```
     #[cfg(not(target_arch = "wasm32"))]
     pub async fn add_single(&mut self, content: impl Into<String>, tags: Vec<impl Into<String>>) {
         self.add(vec![content], tags).await;
     }
 
-    /// Add many documen/embedding pairs to the database.
+    /// Add many document/embedding pairs to the database.
     /// This is useful for adding embeddings that have already been generated.
+    /// 
+    /// ```rust
+    /// # tokio_test::block_on(async {
+    /// # use victor_db::memory::{Db, DirectoryHandle};
+    /// # let mut victor = Db::new(DirectoryHandle::default());
+    /// victor.add_embeddings(vec![("Pepperoni pizza", vec![0.1, 0.2, 0.3])], vec!["Pizza Flavors"]).await;
+    /// # })
+    /// ```
     pub async fn add_embeddings(
         &mut self,
         to_add: Vec<(impl Into<String>, Vec<f32>)>,
@@ -137,6 +166,14 @@ impl<D: DirectoryHandle> Victor<D> {
     /// Add a single document/embedding pair to the database.
     /// This is useful for adding embeddings that have already been generated.
     /// When adding many documents, it is more efficient to use `add_embeddings`.
+    /// 
+    /// ```rust
+    /// # tokio_test::block_on(async {
+    /// # use victor_db::memory::{Db, DirectoryHandle};
+    /// # let mut victor = Db::new(DirectoryHandle::default());
+    /// victor.add_single_embedding("Pepperoni pizza", vec![0.1, 0.2, 0.3], vec!["Pizza Flavors"]).await;
+    /// # })
+    /// ```
     pub async fn add_single_embedding(
         &mut self,
         content: impl Into<String>,
@@ -149,6 +186,14 @@ impl<D: DirectoryHandle> Victor<D> {
     /// Search the database for the nearest neighbors to a given document.
     /// An embedding will be generated for the document being searched for.
     /// This will return the top `top_n` nearest neighbors.
+    /// 
+    /// ```rust
+    /// # tokio_test::block_on(async {
+    /// # use victor_db::memory::{Db, DirectoryHandle};
+    /// # let mut victor = Db::new(DirectoryHandle::default());
+    /// victor.search("Pepperoni pizza", vec!["Pizza Flavors"], 10).await;
+    /// # })
+    /// ```
     #[cfg(not(target_arch = "wasm32"))]
     pub async fn search(
         &self,
