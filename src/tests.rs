@@ -7,7 +7,7 @@ async fn store_and_retrieve() {
     let mut victor = Db::new(DirectoryHandle::default());
 
     victor
-        .add_embedding("hello", embedding.clone(), Vec::<String>::new())
+        .add_single_embedding("hello", embedding.clone(), Vec::<String>::new())
         .await;
 
     let result = victor
@@ -29,10 +29,10 @@ async fn store_two_and_retrieve() {
     let mut victor = Db::new(DirectoryHandle::default());
 
     victor
-        .add_embedding("hello", embedding_1.clone(), Vec::<String>::new())
+        .add_single_embedding("hello", embedding_1.clone(), Vec::<String>::new())
         .await;
     victor
-        .add_embedding("goodbye", embedding_2.clone(), Vec::<String>::new())
+        .add_single_embedding("goodbye", embedding_2.clone(), Vec::<String>::new())
         .await;
 
     {
@@ -67,10 +67,10 @@ async fn store_two_and_retrieve_with_tags() {
     let mut victor = Db::new(DirectoryHandle::default());
 
     victor
-        .add_embedding("hello", embedding_1.clone(), vec!["greetings".to_string()])
+        .add_single_embedding("hello", embedding_1.clone(), vec!["greetings".to_string()])
         .await;
     victor
-        .add_embedding("goodbye", embedding_2.clone(), vec!["goodbyes".to_string()])
+        .add_single_embedding("goodbye", embedding_2.clone(), vec!["goodbyes".to_string()])
         .await;
 
     {
@@ -135,10 +135,10 @@ async fn incompatible_size_panic() {
     let mut victor = Db::new(DirectoryHandle::default());
 
     victor
-        .add_embedding("hello", embedding_1, Vec::<String>::new())
+        .add_single_embedding("hello", embedding_1, Vec::<String>::new())
         .await;
     victor
-        .add_embedding("hello", embedding_2, Vec::<String>::new())
+        .add_single_embedding("hello", embedding_2, Vec::<String>::new())
         .await;
 }
 

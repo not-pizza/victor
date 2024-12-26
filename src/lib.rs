@@ -26,7 +26,7 @@
 //!     .await;
 //!
 //! // add another embedding to the database, this time with no tags
-//! victor.add("Cheese pizza", vec!["Pizza Flavors"]).await;
+//! victor.add_single("Cheese pizza", vec!["Pizza Flavors"]).await;
 //!
 //! // read the 10 closest results from victor that are tagged with "Pizza Toppings"
 //! // (only 2 will be returned because we only inserted two embeddings)
@@ -67,7 +67,7 @@
 //!     .await;
 //!
 //! // add another embedding to the database, this time with no tags
-//! victor.add("Cheese pizza", vec!["Pizza Flavors"]).await;
+//! victor.add_single("Cheese pizza", vec!["Pizza Flavors"]).await;
 //!
 //! // read the 10 closest results from victor that are tagged with "Pizza Toppings"
 //! // (only 2 will be returned because we only inserted two embeddings)

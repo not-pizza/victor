@@ -108,7 +108,7 @@ impl<D: DirectoryHandle> Victor<D> {
     /// Embedding will be generated for the document.
     /// When adding many documents, it is more efficient to use `add_many`.
     #[cfg(not(target_arch = "wasm32"))]
-    pub async fn add(&mut self, content: impl Into<String>, tags: Vec<impl Into<String>>) {
+    pub async fn add_single(&mut self, content: impl Into<String>, tags: Vec<impl Into<String>>) {
         self.add_many(vec![content], tags).await;
     }
 
@@ -141,7 +141,7 @@ impl<D: DirectoryHandle> Victor<D> {
     /// Add a single document/embedding pair to the database.
     /// This is useful for adding embeddings that have already been generated.
     /// When adding many documents, it is more efficient to use `add_embedding_many`.
-    pub async fn add_embedding(
+    pub async fn add_single_embedding(
         &mut self,
         content: impl Into<String>,
         vector: Vec<f32>,
