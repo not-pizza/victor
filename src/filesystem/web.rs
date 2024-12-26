@@ -55,12 +55,10 @@ impl filesystem::DirectoryHandle for DirectoryHandle {
         name: &str,
         options: &filesystem::GetFileHandleOptions,
     ) -> Result<Self::FileHandleT, Self::Error> {
+        let fs_options = FileSystemGetFileOptions::new();
+        fs_options.set_create(options.create);
         let file_system_file_handle = FileSystemFileHandle::from(
-            JsFuture::from(self.0.get_file_handle_with_options(
-                name,
-                FileSystemGetFileOptions::new().create(options.create),
-            ))
-            .await?,
+            JsFuture::from(self.0.get_file_handle_with_options(name, &fs_options)).await?,
         );
         Ok(FileHandle(file_system_file_handle))
     }
@@ -80,14 +78,10 @@ impl filesystem::FileHandle for FileHandle {
         &mut self,
         options: &filesystem::CreateWritableOptions,
     ) -> Result<Self::WritableFileStreamT, Self::Error> {
+        let fs_options = FileSystemCreateWritableOptions::new();
+        fs_options.set_keep_existing_data(options.keep_existing_data);
         let file_system_writable_file_stream = FileSystemWritableFileStream::unchecked_from_js(
-            JsFuture::from(
-                self.0.create_writable_with_options(
-                    FileSystemCreateWritableOptions::new()
-                        .keep_existing_data(options.keep_existing_data),
-                ),
-            )
-            .await?,
+            JsFuture::from(self.0.create_writable_with_options(&fs_options)).await?,
         );
         Ok(WritableFileStream(file_system_writable_file_stream))
     }

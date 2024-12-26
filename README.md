@@ -100,7 +100,7 @@ This example is also in the `/examples` directory. If you've cloned this reposit
    **Install wasm** pack with `cargo install wasm-pack` or `npm i -g wasm-pack`
    (https://rustwasm.github.io/wasm-pack/installer/)
 
-2. **Build Victor** with `wasm-pack build`
+2. **Build Victor** with `wasm-pack build --target web`
 
 3. **Set up the example project**, which is in `www/`.
 
