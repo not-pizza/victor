@@ -32,8 +32,11 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-      - name: Run clippy
-        run: cargo clippy -- -D warnings
+      - name: Run clippy (wasm)
+        run: cargo clippy -- -D warnings --target wasm32-unknown-unknown
+
+      - name: Run clippy (native)
+        run: cargo clippy -- -D warnings --target x86_64-unknown-linux-gnu
 
       - name: Run tests
         run: cargo test

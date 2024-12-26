@@ -77,6 +77,8 @@ impl<D: DirectoryHandle> Victor<D> {
         Self { root }
     }
 
+    /// Add many documents to the database.
+    /// Embeddings will be generated for each document.
     #[cfg(not(target_arch = "wasm32"))]
     pub async fn add_many(
         &mut self,
@@ -96,11 +98,16 @@ impl<D: DirectoryHandle> Victor<D> {
         self.add_embedding_many(to_add, tags).await;
     }
 
+    /// Add a single document to the database.
+    /// Embedding will be generated for the document.
+    /// When adding many documents, it is more efficient to use `add_many`.
     #[cfg(not(target_arch = "wasm32"))]
     pub async fn add(&mut self, content: impl Into<String>, tags: Vec<String>) {
         self.add_many(vec![content], tags).await;
     }
 
+    /// Add many documen/embedding pairs to the database.
+    /// This is useful for adding embeddings that have already been generated.
     pub async fn add_embedding_many(
         &mut self,
         to_add: Vec<(impl Into<String>, Vec<f32>)>,
@@ -125,6 +132,9 @@ impl<D: DirectoryHandle> Victor<D> {
         self.write_contents(contents).await.unwrap();
     }
 
+    /// Add a single document/embedding pair to the database.
+    /// This is useful for adding embeddings that have already been generated.
+    /// When adding many documents, it is more efficient to use `add_embedding_many`.
     pub async fn add_embedding(
         &mut self,
         content: impl Into<String>,
@@ -134,6 +144,9 @@ impl<D: DirectoryHandle> Victor<D> {
         self.add_embedding_many(vec![(content, vector)], tags).await;
     }
 
+    /// Search the database for the nearest neighbors to a given document.
+    /// An embedding will be generated for the document being searched for.
+    /// This will return the top `top_n` nearest neighbors.
     #[cfg(not(target_arch = "wasm32"))]
     pub async fn search(
         &self,
@@ -152,6 +165,8 @@ impl<D: DirectoryHandle> Victor<D> {
         self.search_embedding(vector, with_tags, top_n).await
     }
 
+    /// Search the database for the nearest neighbors to a given embedding.
+    /// This will return the top `top_n` nearest neighbors.
     pub async fn search_embedding(
         &self,
         mut vector: Vec<f32>,
