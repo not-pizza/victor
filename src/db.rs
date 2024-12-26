@@ -611,7 +611,7 @@ impl Eq for NearestNeighborsResult {}
 
 impl PartialOrd for NearestNeighborsResult {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.similarity.partial_cmp(&other.similarity)
+        Some(self.cmp(other))
     }
 }
 
