@@ -85,7 +85,7 @@ impl<D: DirectoryHandle> Victor<D> {
 
     /// Add many documents to the database.
     /// Embeddings will be generated for each document.
-    /// 
+    ///
     /// ```rust
     /// # tokio_test::block_on(async {
     /// # use victor_db::memory::{Db, DirectoryHandle};
@@ -116,7 +116,7 @@ impl<D: DirectoryHandle> Victor<D> {
     /// Add a single document to the database.
     /// Embedding will be generated for the document.
     /// When adding many documents, it is more efficient to use `add`.
-    /// 
+    ///
     /// ```rust
     /// # tokio_test::block_on(async {
     /// # use victor_db::memory::{Db, DirectoryHandle};
@@ -131,7 +131,7 @@ impl<D: DirectoryHandle> Victor<D> {
 
     /// Add many document/embedding pairs to the database.
     /// This is useful for adding embeddings that have already been generated.
-    /// 
+    ///
     /// ```rust
     /// # tokio_test::block_on(async {
     /// # use victor_db::memory::{Db, DirectoryHandle};
@@ -166,7 +166,7 @@ impl<D: DirectoryHandle> Victor<D> {
     /// Add a single document/embedding pair to the database.
     /// This is useful for adding embeddings that have already been generated.
     /// When adding many documents, it is more efficient to use `add_embeddings`.
-    /// 
+    ///
     /// ```rust
     /// # tokio_test::block_on(async {
     /// # use victor_db::memory::{Db, DirectoryHandle};
@@ -186,7 +186,7 @@ impl<D: DirectoryHandle> Victor<D> {
     /// Search the database for the nearest neighbors to a given document.
     /// An embedding will be generated for the document being searched for.
     /// This will return the top `top_n` nearest neighbors.
-    /// 
+    ///
     /// ```rust
     /// # tokio_test::block_on(async {
     /// # use victor_db::memory::{Db, DirectoryHandle};

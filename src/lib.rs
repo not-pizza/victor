@@ -199,7 +199,9 @@ impl Db {
             })
             .unwrap_or(vec![]);
 
-        self.victor.add_embedding(content, embedding, tags).await;
+        self.victor
+            .add_single_embedding(content, embedding, tags)
+            .await;
     }
 
     /// Search the database for the nearest neighbors to a given embedding.
