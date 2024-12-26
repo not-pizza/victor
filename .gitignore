@@ -6,3 +6,4 @@ Cargo.lock
 pkg/
 node_modules/
 victor_test_data/
+.fastembed_cache/
