@@ -38,6 +38,9 @@ jobs:
       - name: Run tests
         run: cargo test
 
+      - name: Check semver
+        uses: obi1kenobi/cargo-semver-checks-action@v2
+
   wasm-build:
     runs-on: ubuntu-latest
     steps:
@@ -53,6 +56,13 @@ jobs:
 
       - name: Build wasm package
         run: wasm-pack build --target web
+
+      - name: Install Node.js via nvm
+        working-directory: www
+        shell: bash --login {0}
+        run: |
+          nvm install --latest-npm --no-progress
+          echo "$(dirname $(nvm which node))" >> $GITHUB_PATH
 
       - name: Install and build www
         working-directory: www
