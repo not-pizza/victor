@@ -1,6 +1,6 @@
 [package]
 name = "victor-db"
-version = "0.2.3"
+version = "0.2.0"
 authors = ["Sam Hall <s@muel.email", "Andre Popovitch <andre@popovit.ch>"]
 edition = "2021"
 license-file = "LICENSE.md"
