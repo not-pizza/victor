@@ -41,6 +41,9 @@ jobs:
       - name: Run tests
         run: cargo test
 
+      - name: Run examples
+        run: cargo test --examples
+
       - name: Check semver
         uses: obi1kenobi/cargo-semver-checks-action@v2
 

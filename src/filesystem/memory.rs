@@ -67,8 +67,8 @@ impl filesystem::DirectoryHandle for DirectoryHandle {
 }
 
 impl DirectoryHandle {
-    #[allow(dead_code)]
-    pub(crate) fn new() -> Self {
+    /// Create a new in-memory virtual directory.
+    pub fn new() -> Self {
         Self(Rc::new(RefCell::new(HashMap::new())))
     }
 }
