@@ -87,7 +87,7 @@ impl<D: DirectoryHandle> Victor<D> {
 
         let vectors = model.embed(content.clone(), None).unwrap();
         for (vector, content) in vectors.iter().zip(content.iter()) {
-            self.write(content.clone(), vector.clone(), tags.clone())
+            self.add_embedding(content.clone(), vector.clone(), tags.clone())
                 .await;
         }
     }
@@ -97,7 +97,12 @@ impl<D: DirectoryHandle> Victor<D> {
         self.add_many(vec![content], tags).await;
     }
 
-    pub async fn write(&mut self, content: impl Into<String>, vector: Vec<f32>, tags: Vec<String>) {
+    pub async fn add_embedding(
+        &mut self,
+        content: impl Into<String>,
+        vector: Vec<f32>,
+        tags: Vec<String>,
+    ) {
         let content = content.into();
 
         let id = Uuid::new_v4();
