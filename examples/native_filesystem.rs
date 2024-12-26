@@ -10,14 +10,14 @@ async fn main() {
     victor.clear_db().await.unwrap();
 
     victor
-        .write(
+        .add_embedding(
             "Test Vector 1",
             vec![1.0, 0.0, 0.0],
             vec!["Test".to_string()],
         )
         .await;
     victor
-        .write(
+        .add_embedding(
             "Test Vector 2",
             vec![0.0, 1.0, 0.0],
             vec!["Test".to_string()],

@@ -6,7 +6,9 @@ async fn store_and_retrieve() {
 
     let mut victor = Db::new(DirectoryHandle::new());
 
-    victor.write("hello", embedding.clone(), vec![]).await;
+    victor
+        .add_embedding("hello", embedding.clone(), vec![])
+        .await;
 
     let result = victor
         .search_embedding(embedding, vec![], 1)
@@ -26,8 +28,12 @@ async fn store_two_and_retrieve() {
 
     let mut victor = Db::new(DirectoryHandle::new());
 
-    victor.write("hello", embedding_1.clone(), vec![]).await;
-    victor.write("goodbye", embedding_2.clone(), vec![]).await;
+    victor
+        .add_embedding("hello", embedding_1.clone(), vec![])
+        .await;
+    victor
+        .add_embedding("goodbye", embedding_2.clone(), vec![])
+        .await;
 
     {
         let result = victor
@@ -61,10 +67,10 @@ async fn store_two_and_retrieve_with_tags() {
     let mut victor = Db::new(DirectoryHandle::new());
 
     victor
-        .write("hello", embedding_1.clone(), vec!["greetings".to_string()])
+        .add_embedding("hello", embedding_1.clone(), vec!["greetings".to_string()])
         .await;
     victor
-        .write("goodbye", embedding_2.clone(), vec!["goodbyes".to_string()])
+        .add_embedding("goodbye", embedding_2.clone(), vec!["goodbyes".to_string()])
         .await;
 
     {
@@ -128,8 +134,8 @@ async fn incompatible_size_panic() {
 
     let mut victor = Db::new(DirectoryHandle::new());
 
-    victor.write("hello", embedding_1, vec![]).await;
-    victor.write("hello", embedding_2, vec![]).await;
+    victor.add_embedding("hello", embedding_1, vec![]).await;
+    victor.add_embedding("hello", embedding_2, vec![]).await;
 }
 
 #[tokio::test]
