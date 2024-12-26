@@ -7,13 +7,15 @@ async fn main() {
     victor.clear_db().await.unwrap();
 
     victor
-        .add_many(
+        .add(
             vec!["Pineapple", "Rocks"], // documents
             vec!["Pizza Toppings"],     // tags (only used for filtering)
         )
         .await;
 
-    victor.add("Cheese pizza", vec!["Pizza Flavors"]).await; // Add another entry with no tags
+    victor
+        .add_single("Cheese pizza", vec!["Pizza Flavors"])
+        .await; // Add another entry with no tags
 
     // read the 10 closest results from victor that are tagged with "Pizza Toppings"
     // (only 2 will be returned because we only inserted two embeddings)
