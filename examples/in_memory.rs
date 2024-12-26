@@ -2,7 +2,7 @@
 async fn main() {
     use victor_db::memory::{Db, DirectoryHandle};
 
-    let mut victor = Db::new(DirectoryHandle::new());
+    let mut victor = Db::new(DirectoryHandle::default());
 
     victor.clear_db().await.unwrap();
 

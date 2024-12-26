@@ -65,6 +65,7 @@ extern "C" {
     fn warn(s: &str);
 }
 
+/// A browser-optimized vector database.
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 pub struct Db {
@@ -74,6 +75,7 @@ pub struct Db {
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 impl Db {
+    /// Connect to victor.
     #[wasm_bindgen(constructor)]
     pub async fn new() -> Self {
         utils::set_panic_hook();
@@ -91,6 +93,7 @@ impl Db {
         Self { victor }
     }
 
+    /// Add a document to the database.
     pub async fn insert(&mut self, content: &str, embedding: &[f64], tags: Option<Vec<JsValue>>) {
         let embedding = embedding.iter().map(|x| *x as f32).collect::<Vec<_>>();
 
@@ -105,6 +108,7 @@ impl Db {
         self.victor.add_embedding(content, embedding, tags).await;
     }
 
+    /// Search the database for the nearest neighbors to a given embedding.
     pub async fn search(
         &mut self,
         embedding: &[f64],
@@ -129,6 +133,7 @@ impl Db {
         serde_wasm_bindgen::to_value(&nearest_neighbors).unwrap()
     }
 
+    /// Clear the database, permanently removing all data.
     pub async fn clear(&mut self) {
         utils::set_panic_hook();
 

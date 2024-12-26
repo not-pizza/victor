@@ -65,10 +65,8 @@ impl filesystem::DirectoryHandle for DirectoryHandle {
         Ok(())
     }
 }
-
-impl DirectoryHandle {
-    /// Create a new in-memory virtual directory.
-    pub fn new() -> Self {
+impl Default for DirectoryHandle {
+    fn default() -> Self {
         Self(Rc::new(RefCell::new(HashMap::new())))
     }
 }
