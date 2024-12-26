@@ -86,11 +86,7 @@ impl<D: DirectoryHandle> Victor<D> {
     /// Add many documents to the database.
     /// Embeddings will be generated for each document.
     #[cfg(not(target_arch = "wasm32"))]
-    pub async fn add_many(
-        &mut self,
-        content: Vec<impl Into<String>>,
-        tags: Vec<impl Into<String>>,
-    ) {
+    pub async fn add(&mut self, content: Vec<impl Into<String>>, tags: Vec<impl Into<String>>) {
         let tags = tags.into_iter().map(|t| t.into()).collect::<Vec<String>>();
         let model = fastembed::TextEmbedding::try_new(Default::default()).unwrap();
         let content = content
@@ -101,20 +97,20 @@ impl<D: DirectoryHandle> Victor<D> {
         let vectors = model.embed(content.clone(), None).unwrap();
 
         let to_add = content.into_iter().zip(vectors.into_iter()).collect();
-        self.add_embedding_many(to_add, tags).await;
+        self.add_embeddings(to_add, tags).await;
     }
 
     /// Add a single document to the database.
     /// Embedding will be generated for the document.
-    /// When adding many documents, it is more efficient to use `add_many`.
+    /// When adding many documents, it is more efficient to use `add`.
     #[cfg(not(target_arch = "wasm32"))]
     pub async fn add_single(&mut self, content: impl Into<String>, tags: Vec<impl Into<String>>) {
-        self.add_many(vec![content], tags).await;
+        self.add(vec![content], tags).await;
     }
 
     /// Add many documen/embedding pairs to the database.
     /// This is useful for adding embeddings that have already been generated.
-    pub async fn add_embedding_many(
+    pub async fn add_embeddings(
         &mut self,
         to_add: Vec<(impl Into<String>, Vec<f32>)>,
         tags: Vec<impl Into<String>>,
@@ -140,14 +136,14 @@ impl<D: DirectoryHandle> Victor<D> {
 
     /// Add a single document/embedding pair to the database.
     /// This is useful for adding embeddings that have already been generated.
-    /// When adding many documents, it is more efficient to use `add_embedding_many`.
+    /// When adding many documents, it is more efficient to use `add_embeddings`.
     pub async fn add_single_embedding(
         &mut self,
         content: impl Into<String>,
         vector: Vec<f32>,
         tags: Vec<impl Into<String>>,
     ) {
-        self.add_embedding_many(vec![(content, vector)], tags).await;
+        self.add_embeddings(vec![(content, vector)], tags).await;
     }
 
     /// Search the database for the nearest neighbors to a given document.

@@ -143,11 +143,11 @@ async fn incompatible_size_panic() {
 }
 
 #[tokio::test]
-async fn add_many() {
+async fn add() {
     let mut victor = Db::new(DirectoryHandle::default());
 
     victor
-        .add_many(vec!["pineapple", "rocks"], Vec::<String>::new())
+        .add(vec!["pineapple", "rocks"], Vec::<String>::new())
         .await;
 
     let result = victor

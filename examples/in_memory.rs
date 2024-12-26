@@ -7,7 +7,7 @@ async fn main() {
     victor.clear_db().await.unwrap();
 
     victor
-        .add_many(
+        .add(
             vec!["Pineapple", "Rocks"], // documents
             vec!["Pizza Toppings"],     // tags (only used for filtering)
         )
