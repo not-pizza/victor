@@ -27,5 +27,9 @@ module.exports = {
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
   },
-  plugins: [new CopyWebpackPlugin([{ from: 'index.html', to: 'index.html' }])],
+  plugins: [new CopyWebpackPlugin({
+    patterns: [
+      { from: 'index.html' }
+    ]
+  })],
 };
