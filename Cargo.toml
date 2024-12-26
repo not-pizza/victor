@@ -56,8 +56,9 @@ fastembed = "4.3.0"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
-tokio = { version = "1", features = ["rt", "macros"] }
 rand = "0.8"
+tokio-test = "0.4"
+
 
 [profile.release]
 # Tell `rustc` to optimize for small code size.

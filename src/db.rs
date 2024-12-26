@@ -19,6 +19,8 @@ use crate::{
     similarity,
 };
 
+/// The main database struct.
+/// Through this you can [`Victor::add`] and [`Victor::search`] for embeddings.
 pub struct Victor<D> {
     root: D,
 }
@@ -72,6 +74,10 @@ extern "C" {
 }
 
 impl<D: DirectoryHandle> Victor<D> {
+    /// Create a new Victor database given a directory handle.
+    ///
+    /// For example, you can use [`std::path::PathBuf`] to use the native filesystem.
+    /// Or you can use [`crate::memory::DirectoryHandle`] to use an in-memory database.
     pub fn new(root: impl Into<D>) -> Self {
         let root = root.into();
         Self { root }
@@ -557,6 +563,7 @@ impl<D: DirectoryHandle> Victor<D> {
         content.to_string()
     }
 
+    /// Clear the database, deleting all data.
     pub async fn clear_db(&mut self) -> Result<(), D::Error> {
         // clear db files
         let files = Index::get_all_db_filenames(&mut self.root).await?;

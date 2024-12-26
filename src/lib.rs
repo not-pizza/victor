@@ -1,4 +1,91 @@
-//! A browser-optimized vector database. Backed by the private virtual filesystem API on web. On native, supports running with the native filesystem or in memory.
+//! A browser-optimized vector database. Backed by the private virtual filesystem API on web.
+//!
+//! You're viewing this on crates.io, so you're probably interested in the native version. The native version supports running with the native filesystem or in memory.
+//!
+//! If you want to use it on the web, [check out victor-db on npm](https://www.npmjs.com/package/victor-db).
+//!
+//! ## In-memory database
+//!
+//! Use this if you want to run victor in-memory (all data is lost when the program exits).
+//!
+//! The in-memory version is useful for testing and applications where you don't need to persist data:
+//! ```rust
+//! # tokio_test::block_on(async {
+//! // use victor_db::memory for the in-memory implementation
+//! use victor_db::memory::{Db, DirectoryHandle};
+//!
+//! // create a new in-memory database
+//! let mut victor = Db::new(DirectoryHandle::default());
+//!
+//! // add some embeddings to the database
+//! victor
+//!     .add_many(
+//!         vec!["Pineapple", "Rocks"], // documents
+//!         vec!["Pizza Toppings"],     // tags (only used for filtering)
+//!     )
+//!     .await;
+//!
+//! // add another embedding to the database, this time with no tags
+//! victor.add("Cheese pizza", vec!["Pizza Flavors"]).await;
+//!
+//! // read the 10 closest results from victor that are tagged with "Pizza Toppings"
+//! // (only 2 will be returned because we only inserted two embeddings)
+//! let nearest = victor
+//!     .search("Hawaiian pizza", vec!["Pizza Toppings"], 10)
+//!     .await
+//!     .first()
+//!     .unwrap()
+//!     .content
+//!     .clone();
+//! assert_eq!(nearest, "Pineapple".to_string());
+//!
+//! // Clear the database
+//! victor.clear_db().await.unwrap();
+//! # })
+//! ```
+//!
+//! ## Native database
+//!
+//! Use this if you want to persist your database to disk.
+//!
+//! ```rust
+//! # tokio_test::block_on(async {
+//! // use victor_db::native for the native filesystem implementation
+//! use victor_db::native::Db;
+//! use std::path::PathBuf;
+//!
+//! // create a new native database under "./victor_test_data"
+//! let _ = std::fs::create_dir("./victor_test_data");
+//! let mut victor = Db::new(PathBuf::from("./victor_test_data"));
+//!
+//! // add some embeddings to the database
+//! victor
+//!     .add_many(
+//!         vec!["Pineapple", "Rocks"], // documents
+//!         vec!["Pizza Toppings"],     // tags (only used for filtering)
+//!     )
+//!     .await;
+//!
+//! // add another embedding to the database, this time with no tags
+//! victor.add("Cheese pizza", vec!["Pizza Flavors"]).await;
+//!
+//! // read the 10 closest results from victor that are tagged with "Pizza Toppings"
+//! // (only 2 will be returned because we only inserted two embeddings)
+//! let nearest = victor
+//!     .search("Hawaiian pizza", vec!["Pizza Toppings"], 10)
+//!     .await
+//!     .first()
+//!     .unwrap()
+//!     .content
+//!     .clone();
+//! assert_eq!(nearest, "Pineapple".to_string());
+//!
+//! // Clear the database
+//! victor.clear_db().await.unwrap();
+//! # })
+//! ```
+//!
+//! See the docs for [`Victor`] for more information.
 
 #![deny(missing_docs)]
 
@@ -8,6 +95,9 @@ mod filesystem;
 mod packed_vector;
 mod similarity;
 mod utils;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use db::Victor;
 
 #[cfg(test)]
 mod tests;
@@ -22,7 +112,9 @@ type Victor = crate::db::Victor<filesystem::web::DirectoryHandle>;
 
 // Native
 
-/// Used to tell victor to use the native filesystem.
+/// Victor's native filesystem implementation.
+///
+/// Use this if you want to persist your database to disk.
 #[cfg(not(target_arch = "wasm32"))]
 pub mod native {
     use crate::db::Victor;
@@ -31,7 +123,9 @@ pub mod native {
     pub type Db = Victor<crate::filesystem::native::DirectoryHandle>;
 }
 
-/// Used to tell victor to use an in-memory filesystem.
+/// Victor's in-memory implementation.
+///
+/// Use this if you want to run victor in-memory (all data is lost when the program exits).
 #[cfg(not(target_arch = "wasm32"))]
 pub mod memory {
     use crate::db::Victor;
