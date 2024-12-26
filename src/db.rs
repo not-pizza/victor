@@ -78,7 +78,12 @@ impl<D: DirectoryHandle> Victor<D> {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    pub async fn add_many(&mut self, content: Vec<impl Into<String>>, tags: Vec<String>) {
+    pub async fn add_many(
+        &mut self,
+        content: Vec<impl Into<String>>,
+        tags: Vec<impl Into<String>>,
+    ) {
+        let tags = tags.into_iter().map(|t| t.into()).collect::<Vec<String>>();
         let model = fastembed::TextEmbedding::try_new(Default::default()).unwrap();
         let content = content
             .into_iter()
@@ -99,8 +104,9 @@ impl<D: DirectoryHandle> Victor<D> {
     pub async fn add_embedding_many(
         &mut self,
         to_add: Vec<(impl Into<String>, Vec<f32>)>,
-        tags: Vec<String>,
+        tags: Vec<impl Into<String>>,
     ) {
+        let tags = tags.into_iter().map(|t| t.into()).collect::<Vec<String>>();
         let (contents, embeddings) = to_add
             .into_iter()
             .map(|(content, embedding)| {
@@ -123,7 +129,7 @@ impl<D: DirectoryHandle> Victor<D> {
         &mut self,
         content: impl Into<String>,
         vector: Vec<f32>,
-        tags: Vec<String>,
+        tags: Vec<impl Into<String>>,
     ) {
         self.add_embedding_many(vec![(content, vector)], tags).await;
     }
@@ -132,7 +138,7 @@ impl<D: DirectoryHandle> Victor<D> {
     pub async fn search(
         &self,
         content: impl Into<String>,
-        with_tags: Vec<String>,
+        with_tags: Vec<impl Into<String>>,
         top_n: u32,
     ) -> Vec<NearestNeighborsResult> {
         let model = fastembed::TextEmbedding::try_new(Default::default()).unwrap();
@@ -149,9 +155,13 @@ impl<D: DirectoryHandle> Victor<D> {
     pub async fn search_embedding(
         &self,
         mut vector: Vec<f32>,
-        with_tags: Vec<String>,
+        with_tags: Vec<impl Into<String>>,
         top_n: u32,
     ) -> Vec<NearestNeighborsResult> {
+        let with_tags = with_tags
+            .into_iter()
+            .map(|t| t.into())
+            .collect::<Vec<String>>();
         let top_n = top_n as usize;
         let with_tags = with_tags.into_iter().collect::<BTreeSet<_>>();
         let file_handles = Index::get_matching_db_files(&self.root, with_tags)
@@ -668,7 +678,8 @@ impl PartialOrd for NearestNeighborsResult {
 
 impl Ord for NearestNeighborsResult {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.partial_cmp(other)
+        self.similarity
+            .partial_cmp(&other.similarity)
             .expect("could not compare, most likely a NaN is involved")
     }
 }

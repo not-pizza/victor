@@ -142,7 +142,7 @@ async fn incompatible_size_panic() {
 async fn add_many() {
     let mut victor = Db::new(DirectoryHandle::new());
 
-    victor.add_many(vec!["pinapple", "rocks"], vec![]).await;
+    victor.add_many(vec!["pineapple", "rocks"], vec![]).await;
 
     let result = victor
         .search("hawaiian pizza", vec![], 1)
@@ -151,5 +151,5 @@ async fn add_many() {
         .unwrap()
         .content
         .clone();
-    assert_eq!(result, "pinapple");
+    assert_eq!(result, "pineapple");
 }

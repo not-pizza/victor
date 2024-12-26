@@ -1,3 +1,7 @@
+//! A browser-optimized vector database. Backed by the private virtual filesystem API on web. On native, supports running with the native filesystem or in memory.
+
+#![deny(missing_docs)]
+
 mod db;
 mod decomposition;
 mod filesystem;
@@ -18,19 +22,24 @@ type Victor = crate::db::Victor<filesystem::web::DirectoryHandle>;
 
 // Native
 
+/// Used to tell victor to use the native filesystem.
 #[cfg(not(target_arch = "wasm32"))]
 pub mod native {
     use crate::db::Victor;
 
+    /// A native vector database.
     pub type Db = Victor<crate::filesystem::native::DirectoryHandle>;
 }
 
+/// Used to tell victor to use an in-memory filesystem.
 #[cfg(not(target_arch = "wasm32"))]
 pub mod memory {
     use crate::db::Victor;
 
+    /// The directory handle type for the in-memory filesystem.
     pub use crate::filesystem::memory::DirectoryHandle;
 
+    /// An in-memory vector database.
     pub type Db = Victor<DirectoryHandle>;
 }
 
