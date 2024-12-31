@@ -282,6 +282,20 @@ impl<D: DirectoryHandle> Victor<D> {
         nearest
     }
 
+    /// Dump all the documents that have been added to the database.
+    pub async fn dump_content(&self) -> Vec<String> {
+        let content_file_handle = self
+            .root
+            .get_file_handle_with_options("content.bin", &GetFileHandleOptions { create: true })
+            .await
+            .unwrap();
+
+        let content = content_file_handle.read().await.unwrap();
+        let hashmap: HashMap<Uuid, String> =
+            bincode::deserialize(&content).expect("Failed to deserialize existing data");
+        hashmap.values().cloned().collect()
+    }
+
     // utils
 
     async fn project_embeddings(&mut self) {
