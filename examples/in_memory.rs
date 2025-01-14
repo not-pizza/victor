@@ -14,11 +14,11 @@ async fn main() {
         .await;
 
     victor
-        .add_single("Cheese pizza", vec!["Pizza Flavors"])
+        .add_single("Cheese pizza", Vec::<String>::new())
         .await; // Add another entry with no tags
 
     // read the 10 closest results from victor that are tagged with "Pizza Toppings"
-    // (only 2 will be returned because we only inserted two embeddings)
+    // (only 2 will be returned because we only inserted two embeddings with the "Pizza Toppings" tag)
     let nearest = victor
         .search("Hawaiian pizza", vec!["Pizza Toppings"], 10)
         .await
