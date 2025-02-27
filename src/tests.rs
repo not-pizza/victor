@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::memory::{Db, DirectoryHandle};
 
 #[tokio::test]
@@ -57,6 +59,18 @@ async fn store_two_and_retrieve() {
 
         assert_eq!(result, "goodbye".to_string());
     }
+
+    let content = victor
+        .dump_content()
+        .await
+        .into_iter()
+        .collect::<HashSet<String>>();
+    assert_eq!(
+        content,
+        vec!["hello".to_string(), "goodbye".to_string()]
+            .into_iter()
+            .collect()
+    );
 }
 
 #[tokio::test]
